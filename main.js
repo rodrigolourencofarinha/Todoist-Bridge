@@ -10220,7 +10220,7 @@ var UltimateTodoistSyncForObsidian = class extends import_obsidian4.Plugin {
     });
     // Manual sync command to run the full synchronization immediately
     this.addCommand({
-      id: "ultimate-todoist-sync-now",
+      id: "todoist-sync-now",
       name: "Sync now (Todoist ⇄ Obsidian)",
       callback: async () => {
         try {

@@ -1,11 +1,11 @@
 {
-	"id": "ultimate-todoist-sync",
+	"id": "todoist-sync",
 	"name": "Todoist Sync",
-	"version": "9.9.9",
+	"version": "1.0.0",
 	"minAppVersion": "1.0.0",
 	"description": "This is the best Todoist task synchronization plugin for Obsidian so far.",
-	"author": "HeroBlackInk",
-	"authorUrl": "https://github.com/HeroBlackInk/", 
+	"author": "Rodrigo Farinha",
+	"authorUrl": "", 
 	"fundingUrl": "",
 	"isDesktopOnly": false
 }
