@@ -1,6 +1,6 @@
 {
-	"id": "todoist-sync",
-	"name": "Todoist Sync",
+	"id": "todoist-bridge",
+	"name": "Todoist Bridge",
 	"version": "1.0.0",
 	"minAppVersion": "1.0.0",
 	"description": "This is the best Todoist task synchronization plugin for Obsidian so far.",

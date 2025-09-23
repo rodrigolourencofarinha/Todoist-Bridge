@@ -7549,7 +7549,7 @@ var require_dist10 = __commonJS({
 // main.ts
 var main_exports = {};
 __export(main_exports, {
-  default: () => UltimateTodoistSyncForObsidian
+  default: () => TodoistBridgeForObsidian
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian4 = require("obsidian");
@@ -7572,7 +7572,7 @@ var DEFAULT_SETTINGS = {
   //mySetting: 'default',
   //todoistTasksFilePath: 'todoistTasks.json'
 };
-var UltimateTodoistSyncSettingTab = class extends import_obsidian.PluginSettingTab {
+var TodoistBridgeSettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -7581,7 +7581,7 @@ var UltimateTodoistSyncSettingTab = class extends import_obsidian.PluginSettingT
     var _a, _b;
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Settings for Ultimate Todoist Sync for Obsidian." });
+    containerEl.createEl("h2", { text: "Settings for Todoist Bridge" });
     const myProjectsOptions = (_b = (_a = this.plugin.settings.todoistTasksData) == null ? void 0 : _a.projects) == null ? void 0 : _b.reduce((obj, item) => {
       obj[item.id.toString()] = item.name;
       return obj;
@@ -7650,7 +7650,7 @@ var UltimateTodoistSyncSettingTab = class extends import_obsidian.PluginSettingT
           return;
         }
         try {
-          new import_obsidian.Notice("Todoist Sync: Sync started");
+          new import_obsidian.Notice("Todoist Bridge: Sync started");
           await this.plugin.scheduledSynchronization();
           this.plugin.syncLock = false;
           
@@ -8223,8 +8223,8 @@ var keywords = {
 var REGEX = {
   TODOIST_TAG: new RegExp(`^[\\s]*[-] \\[[x ]\\] [\\s\\S]*${keywords.TODOIST_TAG}[\\s\\S]*$`, "i"),
   // Match [todoist_id:: N], optionally wrapped by %% ... %% or metadata spans
-  TODOIST_ID: /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class="todoist-sync">\s*))?\[todoist_id::\s*\d+\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/,
-  TODOIST_ID_NUM: /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class="todoist-sync">\s*))?\[todoist_id::\s*(.*?)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/,
+  TODOIST_ID: /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class="todoist-bridge">\s*))?\[todoist_id::\s*\d+\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/,
+  TODOIST_ID_NUM: /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class="todoist-bridge">\s*))?\[todoist_id::\s*(.*?)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/,
   TODOIST_LINK: /\[link\]\(.*?\)/,
   DUE_DATE_WITH_EMOJ: new RegExp(`(${keywords.DUE_DATE})\\s?\\d{4}-\\d{2}-\\d{2}`),
   DUE_DATE: new RegExp(`(?:${keywords.DUE_DATE})\\s?(\\d{4}-\\d{2}-\\d{2})`),
@@ -8235,8 +8235,8 @@ var REGEX = {
     REMOVE_SPACE: /^\s+|\s+$/g,
     REMOVE_DATE: new RegExp(`(${keywords.DUE_DATE})\\s?\\d{4}-\\d{2}-\\d{2}`),
     // Remove inline metadata in any of the following forms:
-    //   %%[key:: value]%%, <span class="todoist-sync">[key:: value] -->, <span class="todoist-sync">[key:: value]</span>, or bare [key:: value]
-    REMOVE_INLINE_METADATA: /(%%\s*\[[^\]]+::[^\]]+\]\s*%%|<!--\s*\[[^\]]+::[^\]]+\]\s*-->|<span class="todoist-sync">\s*\[[^\]]+::[^\]]+\]\s*<\/span>|\[[^\]]+::[^\]]+\])/g,
+    //   %%[key:: value]%%, <span class="todoist-bridge">[key:: value] -->, <span class="todoist-bridge">[key:: value]</span>, or bare [key:: value]
+    REMOVE_INLINE_METADATA: /(%%\s*\[[^\]]+::[^\]]+\]\s*%%|<!--\s*\[[^\]]+::[^\]]+\]\s*-->|<span class="todoist-bridge">\s*\[[^\]]+::[^\]]+\]\s*<\/span>|\[[^\]]+::[^\]]+\])/g,
     REMOVE_CHECKBOX: /^(-|\*)\s+\[(x|X| )\]\s/,
     REMOVE_CHECKBOX_WITH_INDENTATION: /^([ \t]*)?(-|\*)\s+\[(x|X| )\]\s/,
     REMOVE_TODOIST_LINK: /\[link\]\(.*?\)/
@@ -8387,7 +8387,7 @@ var TaskParser = class {
       .replace(REGEX.TASK_CONTENT.REMOVE_TODOIST_LINK, "")
       // Remove any remaining HTML comments (e.g., <!-- -->)
       .replace(/<!--[\s\S]*?-->/g, "")
-      .replace(/<span class="todoist-sync">[\s\S]*?<\/span>/gi, "")
+      .replace(/<span class="todoist-bridge">[\s\S]*?<\/span>/gi, "")
       .replace(REGEX.TASK_CONTENT.REMOVE_PRIORITY, " ")
       .replace(REGEX.TASK_CONTENT.REMOVE_TAGS, "")
       .replace(/completed::\s*\d{4}-\d{2}-\d{2}/gi, "")
@@ -8955,7 +8955,7 @@ var FileOperation = class {
       if (line.includes(taskId) && this.plugin.taskParser.hasTodoistTag(line)) {
         let newLine = line.replace(/- \[( |x|X)\]/, "- [x]");
         try {
-          const spanPattern = /<span class="todoist-sync">([\s\S]*?)<\/span>/i;
+          const spanPattern = /<span class="todoist-bridge">([\s\S]*?)<\/span>/i;
           const commentPattern = /<!--\s*([\s\S]*?)\s*-->/;
           const completedTokenPattern = /\[completed::\s*[^\]]+\]/;
           const ensureMetadata = (metadata) => {
@@ -8980,14 +8980,14 @@ var FileOperation = class {
           if (spanPattern.test(newLine)) {
             const match = spanPattern.exec(newLine);
             const metadata = ensureMetadata(match && match[1]);
-            newLine = newLine.replace(spanPattern, `<span class="todoist-sync">${metadata}</span>`);
+            newLine = newLine.replace(spanPattern, `<span class="todoist-bridge">${metadata}</span>`);
           } else if (commentPattern.test(newLine)) {
             const match = commentPattern.exec(newLine);
             const metadata = ensureMetadata(match && match[1]);
-            newLine = newLine.replace(commentPattern, `<span class="todoist-sync">${metadata}</span>`);
+            newLine = newLine.replace(commentPattern, `<span class="todoist-bridge">${metadata}</span>`);
           } else {
             const metadata = ensureMetadata("");
-            newLine = `${newLine.trimEnd()} <span class="todoist-sync">${metadata}</span>`;
+            newLine = `${newLine.trimEnd()} <span class="todoist-bridge">${metadata}</span>`;
           }
         } catch {}
         newLine = newLine.replace(completedInlinePattern, " ");
@@ -9020,7 +9020,7 @@ var FileOperation = class {
         let newLine = line.replace(/- \[(x|X)\]/g, "- [ ]");
         newLine = newLine.replace(/\s*completed::\s*\d{4}-\d{2}-\d{2}/gi, " ");
         if (this.plugin.settings.removeCompletedTagOnReopen) {
-          newLine = newLine.replace(/<span class="todoist-sync">([\s\S]*?)<\/span>/gi, (match, metadata) => {
+          newLine = newLine.replace(/<span class="todoist-bridge">([\s\S]*?)<\/span>/gi, (match, metadata) => {
             let cleaned = (metadata || "").replace(/\s+/g, " ").trim();
             cleaned = cleaned.replace(/\[completed::\s*[^\]]+\]/gi, "").replace(/\s+/g, " ").trim();
             if (!cleaned) {
@@ -9029,7 +9029,7 @@ var FileOperation = class {
             if (!cleaned.endsWith(" ")) {
               cleaned += " ";
             }
-            return `<span class="todoist-sync">${cleaned}</span>`;
+            return `<span class="todoist-bridge">${cleaned}</span>`;
           });
           newLine = newLine.replace(/\s*(\[completed::\s*[^\]]+\])\s*/g, " ");
           newLine = newLine.replace(/<!--\s*\[completed::\s*[^\]]+\]\s*-->/g, "");
@@ -9121,7 +9121,7 @@ var FileOperation = class {
     const idPattern = new RegExp(`\\b${taskId}\\b`);
     const linkIdPattern = new RegExp(`https?://[^\\s)]*/task/${taskId}\\b`);
     const removeIdPatterns = [
-      /<span class="todoist-sync">[\s\S]*?<\/span>/g,
+      /<span class="todoist-bridge">[\s\S]*?<\/span>/g,
       /<!--[\s\S]*?\[todoist_id::\s*\w+\][\s\S]*?-->/g,
       /%%\s*\[todoist_id::\s*[^\]]+\]\s*%%/g,
       /\[todoist_id::\s*[^\]]+\]/g
@@ -9137,7 +9137,7 @@ var FileOperation = class {
       line = line.replace(/\s*completed::\s*\d{4}-\d{2}-\d{2}/gi, " ");
       // Remove id comments
       for (const p of removeIdPatterns) line = line.replace(p, "");
-      line = line.replace(/<span class="todoist-sync">\s*<\/span>/gi, "");
+      line = line.replace(/<span class="todoist-bridge">\s*<\/span>/gi, "");
       // Collapse spaces
       line = line.replace(/\s{2,}/g, " ").trimEnd();
       lines[i] = line;
@@ -9160,7 +9160,7 @@ var FileOperation = class {
         line = line.replace(/(^|\s)#todoist\b/gi, " ");
         line = line.replace(/\s*completed::\s*\d{4}-\d{2}-\d{2}/gi, " ");
         line = line.replace(/<!--\s*-->/g, "");
-        line = line.replace(/<span class="todoist-sync">\s*<\/span>/gi, "");
+        line = line.replace(/<span class="todoist-bridge">\s*<\/span>/gi, "");
         line = line.replace(/\s{2,}/g, " ").trimEnd();
         lines[candidates[0]] = line;
         modified = true;
@@ -9334,7 +9334,7 @@ var FileOperation = class {
     for (let i = 0; i < fileLines.length; i++) {
       const line = fileLines[i];
       if (line.includes(searchTerm)) {
-        const regexResult = /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class=\"todoist-sync\">\s*))?\[todoist_id::\s*(\w+)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/.exec(line);
+        const regexResult = /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class=\"todoist-bridge\">\s*))?\[todoist_id::\s*(\w+)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/.exec(line);
         if (regexResult) {
           todoistId = regexResult[1];
         }
@@ -9460,7 +9460,7 @@ var TodoistSync = class {
         this.plugin.saveSettings();
         // Clean the line in Obsidian: remove @todoist and @task; keep hashtags for plugin logic; wrap todoist_id in a metadata span
         const cleaned = linetxt.replace(/(^|\s)@todoist\b/gi, " ").replace(/(^|\s)@task\b/gi, " ");
-        const text_with_out_link = `${cleaned} <span class="todoist-sync">[todoist_id:: ${todoist_id}] </span>`;
+        const text_with_out_link = `${cleaned} <span class="todoist-bridge">[todoist_id:: ${todoist_id}] </span>`;
         const link = `[link](${newTask.url})`;
         const text = this.plugin.taskParser.addTodoistLink(text_with_out_link, link);
         const from = { line: cursor.line, ch: 0 };
@@ -9539,7 +9539,7 @@ var TodoistSync = class {
           this.plugin.saveSettings();
           // Clean the line in Obsidian: remove @todoist and @task; keep hashtags for plugin logic; wrap todoist_id in a metadata span
           const cleaned2 = line.replace(/(^|\s)@todoist\b/gi, " ").replace(/(^|\s)@task\b/gi, " ");
-          const text_with_out_link = `${cleaned2} <span class="todoist-sync">[todoist_id:: ${todoist_id}] </span>`;
+          const text_with_out_link = `${cleaned2} <span class="todoist-bridge">[todoist_id:: ${todoist_id}] </span>`;
           const link = `[link](${newTask.url})`;
           const text = this.plugin.taskParser.addTodoistLink(text_with_out_link, link);
           lines[i] = text;
@@ -10072,13 +10072,13 @@ var SetDefalutProjectInTheFilepathModal = class extends import_obsidian3.Modal {
   }
 };
 // main.ts
-var UltimateTodoistSyncForObsidian = class extends import_obsidian4.Plugin {
+var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
   async onload() {
     const isSettingsLoaded = await this.loadSettings();
     if (!isSettingsLoaded) {
       return;
     }
-    this.addSettingTab(new UltimateTodoistSyncSettingTab(this.app, this));
+    this.addSettingTab(new TodoistBridgeSettingTab(this.app, this));
     if (!this.settings.todoistAPIToken) {
     } else {
       await this.initializePlugin();
@@ -10220,7 +10220,7 @@ var UltimateTodoistSyncForObsidian = class extends import_obsidian4.Plugin {
     });
     // Manual sync command to run the full synchronization immediately
     this.addCommand({
-      id: "todoist-sync-now",
+      id: "todoist-bridge-now",
       name: "Sync now (Todoist ⇄ Obsidian)",
       callback: async () => {
         try {
@@ -10228,7 +10228,7 @@ var UltimateTodoistSyncForObsidian = class extends import_obsidian4.Plugin {
             
             return;
           }
-          new import_obsidian4.Notice("Todoist Sync: Sync started");
+          new import_obsidian4.Notice("Todoist Bridge: Sync started");
           await this.scheduledSynchronization();        } catch (error) {
           console.error("Manual sync failed:", error);
           
@@ -10246,7 +10246,7 @@ var UltimateTodoistSyncForObsidian = class extends import_obsidian4.Plugin {
     }
   }
   async onunload() {
-    console.log(`Ultimate Todoist Sync for Obsidian id unloaded!`);
+    console.log(`Todoist Bridge id unloaded!`);
     await this.saveSettings();
   }
   async loadSettings() {
@@ -10367,7 +10367,7 @@ var UltimateTodoistSyncForObsidian = class extends import_obsidian4.Plugin {
     const taskElement = target.closest("div");
     if (!taskElement)
       return;
-    const regex = /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class=\"todoist-sync\">\s*))?\[todoist_id::\s*(\d+)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/;
+    const regex = /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class=\"todoist-bridge\">\s*))?\[todoist_id::\s*(\d+)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/;
     const match = ((_a = taskElement.textContent) == null ? void 0 : _a.match(regex)) || false;
     if (match) {
       const taskId = match[1];
