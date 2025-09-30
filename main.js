@@ -7568,7 +7568,8 @@ var DEFAULT_SETTINGS = {
   debugMode: false,
   removeCompletedTagOnReopen: true,
   cleanupMissingRemoteTasksOnSync: true,
-  removeMarkersOnTodoistDelete: true
+  removeMarkersOnTodoistDelete: true,
+  todoistCreationOnlyMode: false
   //mySetting: 'default',
   //todoistTasksFilePath: 'todoistTasks.json'
 };
@@ -7641,6 +7642,12 @@ var TodoistBridgeSettingTab = class extends import_obsidian.PluginSettingTab {
     new import_obsidian.Setting(containerEl).setName("Remove markers for deleted Todoist tasks").setDesc("When Todoist reports that a task was deleted, remove the #todoist tag, link, and Todoist metadata span from the note line.").addToggle(
       (component) => component.setValue(this.plugin.settings.removeMarkersOnTodoistDelete).onChange((value) => {
         this.plugin.settings.removeMarkersOnTodoistDelete = value;
+        this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian.Setting(containerEl).setName("Creation-only mode").setDesc("Only create new Todoist tasks; skip updates, completions, deletions, and inbound sync.").addToggle(
+      (component) => component.setValue(this.plugin.settings.todoistCreationOnlyMode).onChange((value) => {
+        this.plugin.settings.todoistCreationOnlyMode = value;
         this.plugin.saveSettings();
       })
     );
@@ -9383,6 +9390,12 @@ var TodoistSync = class {
     this.plugin = plugin;
   }
   async deletedTaskCheck(file_path) {
+    if (this.plugin.settings.todoistCreationOnlyMode) {
+      if (this.plugin.settings.debugMode) {
+        console.log("Creation-only mode active; skipping deletedTaskCheck.");
+      }
+      return;
+    }
     let file;
     let currentFileValue;
     let view;
@@ -9563,6 +9576,12 @@ var TodoistSync = class {
     }
   }
   async lineModifiedTaskCheck(filepath, lineText, lineNumber, fileContent) {
+    if (this.plugin.settings.todoistCreationOnlyMode) {
+      if (this.plugin.settings.debugMode) {
+        console.log("Creation-only mode active; skipping lineModifiedTaskCheck.");
+      }
+      return;
+    }
     if (this.plugin.settings.enableFullVaultSync) {
       const metadata = await this.plugin.cacheOperation.getFileMetadata(filepath);
       if (!metadata) {
@@ -9675,6 +9694,12 @@ var TodoistSync = class {
     }
   }
   async fullTextModifiedTaskCheck(file_path) {
+    if (this.plugin.settings.todoistCreationOnlyMode) {
+      if (this.plugin.settings.debugMode) {
+        console.log("Creation-only mode active; skipping fullTextModifiedTaskCheck.");
+      }
+      return;
+    }
     let file;
     let currentFileValue;
     let view;
@@ -9721,6 +9746,12 @@ var TodoistSync = class {
   }
   // Close a task by calling API and updating JSON file
   async closeTask(taskId) {
+    if (this.plugin.settings.todoistCreationOnlyMode) {
+      if (this.plugin.settings.debugMode) {
+        console.log("Creation-only mode active; skipping closeTask.");
+      }
+      return;
+    }
     try {
       await this.plugin.todoistRestAPI.CloseTask(taskId);
       await this.plugin.fileOperation.completeTaskInTheFile(taskId, new Date().toISOString());
@@ -9734,6 +9765,12 @@ var TodoistSync = class {
   }
   //open task
   async repoenTask(taskId) {
+    if (this.plugin.settings.todoistCreationOnlyMode) {
+      if (this.plugin.settings.debugMode) {
+        console.log("Creation-only mode active; skipping repoenTask.");
+      }
+      return;
+    }
     try {
       await this.plugin.todoistRestAPI.OpenTask(taskId);
       await this.plugin.fileOperation.uncompleteTaskInTheFile(taskId);
@@ -10014,6 +10051,12 @@ var TodoistSync = class {
   }
   //After renaming the file, check all tasks in the file and update all links.
   async updateTaskDescription(filepath) {
+    if (this.plugin.settings.todoistCreationOnlyMode) {
+      if (this.plugin.settings.debugMode) {
+        console.log("Creation-only mode active; skipping updateTaskDescription.");
+      }
+      return;
+    }
     const metadata = await this.plugin.cacheOperation.getFileMetadata(filepath);
     if (!metadata || !metadata.todoistTasks) {
       return;
@@ -10106,6 +10149,9 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
           if (!this.checkModuleClass()) {
             return;
           }
+          if (this.settings.todoistCreationOnlyMode) {
+            return;
+          }
           if (!await this.checkAndHandleSyncLock())
             return;
           await this.todoistSync.deletedTaskCheck();
@@ -10173,6 +10219,9 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
       }
       await this.cacheOperation.updateRenamedFilePath(oldpath, file.path);
       this.saveSettings();
+      if (this.settings.todoistCreationOnlyMode) {
+        return;
+      }
       if (!await this.checkAndHandleSyncLock())
         return;
       try {
@@ -10255,6 +10304,9 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
       this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
       if (typeof this.settings.removeMarkersOnTodoistDelete === "undefined") {
         this.settings.removeMarkersOnTodoistDelete = true;
+      }
+      if (typeof this.settings.todoistCreationOnlyMode === "undefined") {
+        this.settings.todoistCreationOnlyMode = false;
       }
       return true;
     } catch (error) {
@@ -10345,6 +10397,9 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
           return;
         }
         this.lastLines.set(fileName, line);
+        if (this.settings.todoistCreationOnlyMode) {
+          return;
+        }
         try {
           if (!await this.checkAndHandleSyncLock())
             return;
@@ -10361,6 +10416,9 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
   async checkboxEventhandle(evt) {
     var _a;
     if (!this.checkModuleClass()) {
+      return;
+    }
+    if (this.settings.todoistCreationOnlyMode) {
       return;
     }
     const target = evt.target;
@@ -10430,10 +10488,15 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
     try {
       if (!await this.checkAndHandleSyncLock())
         return;
-      try {
-        await this.todoistSync.syncTodoistToObsidian();
-      } catch (error) {
-        console.error("An error occurred in syncTodoistToObsidian:", error);
+      const creationOnly = this.settings.todoistCreationOnlyMode;
+      if (!creationOnly) {
+        try {
+          await this.todoistSync.syncTodoistToObsidian();
+        } catch (error) {
+          console.error("An error occurred in syncTodoistToObsidian:", error);
+        }
+      } else if (this.settings.debugMode) {
+        console.log("Creation-only mode active; skipping Todoist to Obsidian sync.");
       }
       this.syncLock = false;
       try {
@@ -10441,7 +10504,9 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
       } catch (error) {
         console.error("An error occurred in saveSettings:", error);
       }
-      await new Promise((resolve) => setTimeout(resolve, 5e3));
+      if (!creationOnly) {
+        await new Promise((resolve) => setTimeout(resolve, 5e3));
+      }
       const filesToSync = this.settings.fileMetadata;
       if (this.settings.debugMode) {
         console.log(filesToSync);
@@ -10458,6 +10523,9 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
           console.error("An error occurred in fullTextNewTaskCheck:", error);
         }
         this.syncLock = false;
+        if (creationOnly) {
+          continue;
+        }
         if (!await this.checkAndHandleSyncLock())
           return;
         try {
@@ -10476,7 +10544,7 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
         this.syncLock = false;
       }
       // Optional: clean up markers for tasks deleted in Todoist
-      if (this.settings.cleanupMissingRemoteTasksOnSync) {
+      if (!creationOnly && this.settings.cleanupMissingRemoteTasksOnSync) {
         try {
           const metadatas = await this.cacheOperation.getFileMetadatas();
           for (const key in metadatas) {
