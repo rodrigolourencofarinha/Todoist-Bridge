@@ -1,0 +1,1206 @@
+{
+  "initialized": true,
+  "apiInitialized": true,
+  "defaultProjectName": "Inbox",
+  "automaticSynchronizationInterval": 99999999999,
+  "automaticSynchronizationEnabled": false,
+  "todoistTasksData": {
+    "tasks": [
+      {
+        "id": "9583367412",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 7,
+        "content": "Start exploratory work on customer review data while awaiting transcript access",
+        "description": "[Projects/2025 Executives Misalignment/Meetings/2025-09-26 - Meeting - Refinitiv data pull - Auto Companies.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20Executives%20Misalignment/Meetings/2025-09-26%20-%20Meeting%20-%20Refinitiv%20data%20pull%20-%20Auto%20Companies.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:15:25.130155Z",
+        "due": {
+          "date": "2025-09-30",
+          "string": "30 Sep 18:00",
+          "lang": "en",
+          "isRecurring": false,
+          "datetime": "2025-09-30T18:00:00"
+        },
+        "url": "https://app.todoist.com/app/task/9583367412",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 Executives Misalignment/Meetings/2025-09-26 - Meeting - Refinitiv data pull - Auto Companies.md"
+      },
+      {
+        "id": "9583427977",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 14,
+        "content": "Adopt the dataset variant dropping missing R&D cases, confirm improved significance, and update robustness appendix",
+        "description": "[Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2024%20ESG%20Product%20Innovation/Meetings/2025-09-24%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:40:34.061381Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9583427977",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9583427743",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 11,
+        "content": "Prepare background slides/notes for Yakov explaining main effects and moderators (R&D, competitive intensity, ROA) for the talk",
+        "description": "[Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2024%20ESG%20Product%20Innovation/Meetings/2025-09-24%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:40:26.164076Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9583427743",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9583427663",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 10,
+        "content": "Compile literature to justify the mapping of innovation types to degree of innovativeness and add citations to the manuscript and Yakov's speaker notes",
+        "description": "[Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2024%20ESG%20Product%20Innovation/Meetings/2025-09-24%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:40:22.733803Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9583427663",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9583427830",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 12,
+        "content": "Implement fractional logit/logit main specifications with T-1 lag and document the ESG EWMA justification; retain linear model with contemporaneous, T-1, T-2 for comparison",
+        "description": "[Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2024%20ESG%20Product%20Innovation/Meetings/2025-09-24%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:40:29.534290Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9583427830",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9583427910",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 13,
+        "content": "Re-run IV with the flow-shock instrument: test first stage with and without firm fixed effects; assess instrument strength and moderator results; prefer IV over copulas if it works",
+        "description": "[Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2024%20ESG%20Product%20Innovation/Meetings/2025-09-24%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:40:31.869054Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9583427910",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9583428989",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 15,
+        "content": "Confirm removal of the nine wrongly matched firms and update the sample description accordingly",
+        "description": "[Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2024%20ESG%20Product%20Innovation/Meetings/2025-09-24%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:40:37.604328Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9583428989",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9583427590",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 9,
+        "content": "Aggregate innovation categories: sum new packaging, relaunch, and renovation as incremental; treat new product as radical; re-estimate and produce main and decomposition tables",
+        "description": "[Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2024%20ESG%20Product%20Innovation/Meetings/2025-09-24%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:40:20.324618Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9583427590",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9583429671",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 16,
+        "content": "Share updated tables and a short memo before the Oct 2 meeting",
+        "description": "[Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2024%20ESG%20Product%20Innovation/Meetings/2025-09-24%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:40:40.923473Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9583429671",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9574027276",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 4,
+        "content": "Build the slide deck skeleton and storyline for the Thales presentation",
+        "description": "[Projects/2025 New Sources/Meetings/2025-09-23 - Meeting - Weekly New Sources.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20New%20Sources/Meetings/2025-09-23%20-%20Meeting%20-%20Weekly%20New%20Sources.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-24T00:12:46.212165Z",
+        "due": {
+          "date": "2025-10-01",
+          "string": "1 Oct 08:00",
+          "lang": "en",
+          "isRecurring": false,
+          "datetime": "2025-10-01T08:00:00"
+        },
+        "url": "https://app.todoist.com/app/task/9574027276",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 New Sources/Meetings/2025-09-23 - Meeting - Weekly New Sources.md"
+      },
+      {
+        "id": "9574027580",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 5,
+        "content": "Schedule the internal alignment on Monday and book the presentation with Thales on Tuesday",
+        "description": "[Projects/2025 New Sources/Meetings/2025-09-23 - Meeting - Weekly New Sources.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20New%20Sources/Meetings/2025-09-23%20-%20Meeting%20-%20Weekly%20New%20Sources.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-24T00:12:55.926869Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9574027580",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 New Sources/Meetings/2025-09-23 - Meeting - Weekly New Sources.md"
+      },
+      {
+        "id": "9574026493",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 2,
+        "content": "Co-develop the intern case study with Eduardo and Vitor and send it to the 8 finalists",
+        "description": "[Areas/Decomposer/Meetings/2025-09-23 - Meeting - Reunião Semanal Decomposer.md](obsidian://open?vault=Rodrigo's%20Vault&file=Areas/Decomposer/Meetings/2025-09-23%20-%20Meeting%20-%20Reuni%C3%A3o%20Semanal%20Decomposer.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-24T00:12:14.368578Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9574026493",
+        "duration": null,
+        "deadline": null,
+        "path": "Areas/Decomposer/Meetings/2025-09-23 - Meeting - Reunião Semanal Decomposer.md"
+      },
+      {
+        "id": "9574026532",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 3,
+        "content": "Review the shortlist of 8 candidates and flag any replacements",
+        "description": "[Areas/Decomposer/Meetings/2025-09-23 - Meeting - Reunião Semanal Decomposer.md](obsidian://open?vault=Rodrigo's%20Vault&file=Areas/Decomposer/Meetings/2025-09-23%20-%20Meeting%20-%20Reuni%C3%A3o%20Semanal%20Decomposer.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-24T00:12:16.821054Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9574026532",
+        "duration": null,
+        "deadline": null,
+        "path": "Areas/Decomposer/Meetings/2025-09-23 - Meeting - Reunião Semanal Decomposer.md"
+      },
+      {
+        "id": "9583389049",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 8,
+        "content": "Design a basic prototype to estimate optimal service levels using proxies and test on call center and another high-cost activity",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-22 - Meeting - Weekly AI Research.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-22%20-%20Meeting%20-%20Weekly%20AI%20Research.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-26T18:24:07.802874Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9583389049",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-22 - Meeting - Weekly AI Research.md"
+      },
+      {
+        "id": "9574026092",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": null,
+        "parentId": null,
+        "order": 12,
+        "content": "Review Yash's GitHub repository and generated outputs and provide feedback on Slack",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-23 - Meeting - R&D Decoupling.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-23%20-%20Meeting%20-%20R&D%20Decoupling.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-24T00:11:52.276013Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9574026092",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-23 - Meeting - R&D Decoupling.md"
+      },
+      {
+        "id": "9509618347",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2356202707",
+        "sectionId": null,
+        "parentId": "9509618253",
+        "order": 43,
+        "content": "Evaluate the ML SDG-classification paper; confirm code/GitHub availability and feasibility for probabilistic labels",
+        "description": "[Projects/2025 ESG Patent Innovation/Meetings/2025-09-03 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20ESG%20Patent%20Innovation/Meetings/2025-09-03%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-04T12:02:13.389863Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9509618347",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 ESG Patent Innovation/Meetings/2025-09-03 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9509618422",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2356202707",
+        "sectionId": null,
+        "parentId": "9509618253",
+        "order": 44,
+        "content": "Review Anatoly's referenced Excel of pre-classified patent families and assess mapping to our patent IDs",
+        "description": "[Projects/2025 ESG Patent Innovation/Meetings/2025-09-03 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20ESG%20Patent%20Innovation/Meetings/2025-09-03%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-04T12:02:15.149130Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9509618422",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 ESG Patent Innovation/Meetings/2025-09-03 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9509618253",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2356202707",
+        "sectionId": null,
+        "parentId": null,
+        "order": 6,
+        "content": "Implement WIPO SDG keyword-based patent classification and draft the reproducible query protocol",
+        "description": "[Projects/2025 ESG Patent Innovation/Meetings/2025-09-03 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20ESG%20Patent%20Innovation/Meetings/2025-09-03%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-04T12:02:11.473146Z",
+        "due": {
+          "date": "2025-10-03",
+          "string": "3 Oct 08:00",
+          "lang": "en",
+          "isRecurring": false,
+          "datetime": "2025-10-03T08:00:00"
+        },
+        "url": "https://app.todoist.com/app/task/9509618253",
+        "duration": {
+          "amount": 60,
+          "unit": "minute"
+        },
+        "deadline": null,
+        "path": "Projects/2025 ESG Patent Innovation/Meetings/2025-09-03 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9509619714",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2356202707",
+        "sectionId": null,
+        "parentId": null,
+        "order": 7,
+        "content": "Survey public NIH/NSF datasets and document a linking pipeline to patents (e.g., PubMed → patents where applicable)",
+        "description": "[Projects/2025 ESG Patent Innovation/Meetings/2025-09-03 - Meeting - ESG-Patent-Innovation.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20ESG%20Patent%20Innovation/Meetings/2025-09-03%20-%20Meeting%20-%20ESG-Patent-Innovation.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-04T12:02:46.437860Z",
+        "due": {
+          "date": "2025-10-03",
+          "string": "3 Oct 10:00",
+          "lang": "en",
+          "isRecurring": false,
+          "datetime": "2025-10-03T10:00:00"
+        },
+        "url": "https://app.todoist.com/app/task/9509619714",
+        "duration": {
+          "amount": 30,
+          "unit": "minute"
+        },
+        "deadline": null,
+        "path": "Projects/2025 ESG Patent Innovation/Meetings/2025-09-03 - Meeting - ESG-Patent-Innovation.md"
+      },
+      {
+        "id": "9503545613",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2348887183",
+        "sectionId": null,
+        "parentId": null,
+        "order": 1,
+        "content": "Review PetLove case",
+        "description": "[Areas/Personal/Interactions/2025-08-22 - Meeting - Almoço com Leandro Guissoni.md](obsidian://open?vault=Rodrigo's%20Vault&file=Areas/Personal/Interactions/2025-08-22%20-%20Meeting%20-%20Almo%C3%A7o%20com%20Leandro%20Guissoni.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-02T19:53:59.623939Z",
+        "due": {
+          "date": "2025-10-03",
+          "string": "3 Oct",
+          "lang": "en",
+          "isRecurring": false
+        },
+        "url": "https://app.todoist.com/app/task/9503545613",
+        "duration": null,
+        "deadline": null,
+        "path": "Areas/Personal/Interactions/2025-08-22 - Meeting - Almoço com Leandro Guissoni.md"
+      },
+      {
+        "id": "9523670670",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357352741",
+        "sectionId": null,
+        "parentId": "9523848342",
+        "order": 1,
+        "content": "Add a clear note that the customer journey is non-linear on the methodology/journey slides",
+        "description": "[Projects/2025 Decathlon/Meetings/2025-09-08 - Meeting - Apresentação Decoupling Decathlon.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20Decathlon/Meetings/2025-09-08%20-%20Meeting%20-%20Apresenta%C3%A7%C3%A3o%20Decoupling%20Decathlon.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-08T22:56:33.820084Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9523670670",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 Decathlon/Meetings/2025-09-08 - Meeting - Apresentação Decoupling Decathlon.md"
+      },
+      {
+        "id": "9523672728",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357352741",
+        "sectionId": null,
+        "parentId": "9523848342",
+        "order": 2,
+        "content": "Label charts explicitly as \"industry average\" vs \"Decathlon\" wherever applicable",
+        "description": "[Projects/2025 Decathlon/Meetings/2025-09-08 - Meeting - Apresentação Decoupling Decathlon.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20Decathlon/Meetings/2025-09-08%20-%20Meeting%20-%20Apresenta%C3%A7%C3%A3o%20Decoupling%20Decathlon.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-08T22:57:58.731868Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9523672728",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 Decathlon/Meetings/2025-09-08 - Meeting - Apresentação Decoupling Decathlon.md"
+      },
+      {
+        "id": "9523673205",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357352741",
+        "sectionId": null,
+        "parentId": "9523848342",
+        "order": 3,
+        "content": "Clarify that results are aggregated across online and offline for this package",
+        "description": "[Projects/2025 Decathlon/Meetings/2025-09-08 - Meeting - Apresentação Decoupling Decathlon.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20Decathlon/Meetings/2025-09-08%20-%20Meeting%20-%20Apresenta%C3%A7%C3%A3o%20Decoupling%20Decathlon.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-08T22:58:18.890700Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9523673205",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 Decathlon/Meetings/2025-09-08 - Meeting - Apresentação Decoupling Decathlon.md"
+      },
+      {
+        "id": "9523588347",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": null,
+        "parentId": "9523596087",
+        "order": 6,
+        "content": "Use the shared activity dictionary to generate synthetic reviews and benchmark performance vs. the current trained model",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-05 - Meeting - Atividades para Prompt.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-05%20-%20Meeting%20-%20Atividades%20para%20Prompt.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-08T22:08:19.153448Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9523588347",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-05 - Meeting - Atividades para Prompt.md"
+      },
+      {
+        "id": "9547424494",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": null,
+        "parentId": "9547425606",
+        "order": 3,
+        "content": "Define and circulate a JSON schema for activity metadata to replace Excel-based management",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Prompt Analysis for Model Improvement.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-15%20-%20Meeting%20-%20Prompt%20Analysis%20for%20Model%20Improvement.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-15T22:58:37.390436Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9547424494",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Prompt Analysis for Model Improvement.md"
+      },
+      {
+        "id": "9499684256",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": "202347069",
+        "parentId": null,
+        "order": 3,
+        "content": "Schedule a session with Francisco to discuss infra and data back-and-forth patterns",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-01 - Meeting - Weekly AI Research.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-01%20-%20Meeting%20-%20Weekly%20AI%20Research.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-02T00:40:42.787086Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9499684256",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-01 - Meeting - Weekly AI Research.md"
+      },
+      {
+        "id": "9547419428",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2332108107",
+        "sectionId": "180622658",
+        "parentId": null,
+        "order": 0,
+        "content": "Implement summary-first-and-last slides with small images plus key takeaways in future decks",
+        "description": "[Areas/Decomposer/Meetings/2025-09-15 - Meeting - iRobot Update.md](obsidian://open?vault=Rodrigo's%20Vault&file=Areas/Decomposer/Meetings/2025-09-15%20-%20Meeting%20-%20iRobot%20Update.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-15T22:55:01.881321Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9547419428",
+        "duration": null,
+        "deadline": null,
+        "path": "Areas/Decomposer/Meetings/2025-09-15 - Meeting - iRobot Update.md"
+      },
+      {
+        "id": "9547425606",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": null,
+        "parentId": null,
+        "order": 10,
+        "content": "Design and test a single-pass inference prompt that combines parsing and scoring without translation, and report impact on accuracy/recall/F1 and cost",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Weekly AI Research.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-15%20-%20Meeting%20-%20Weekly%20AI%20Research.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-15T22:59:26.352222Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9547425606",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Weekly AI Research.md"
+      },
+      {
+        "id": "9547426120",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2332108107",
+        "sectionId": "180622658",
+        "parentId": null,
+        "order": 15,
+        "content": "Outline a white paper on fake review incidence by industry (with methods, metrics, and ethical framing)",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Weekly AI Research.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-15%20-%20Meeting%20-%20Weekly%20AI%20Research.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-15T22:59:49.519762Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9547426120",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Weekly AI Research.md"
+      },
+      {
+        "id": "9548935950",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": null,
+        "parentId": null,
+        "order": 13,
+        "content": "Separate metrics by high and low coverage and compare",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Weekly AI Research.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-15%20-%20Meeting%20-%20Weekly%20AI%20Research.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-16T11:02:25.867849Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9548935950",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Weekly AI Research.md"
+      },
+      {
+        "id": "9523528725",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": null,
+        "parentId": "9523596087",
+        "order": 2,
+        "content": "Evaluate the Marketing Science paper on synthetic data prompting and incorporate relevant strategies",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Weekly AI Research meetings.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-08%20-%20Meeting%20-%20Weekly%20AI%20Research%20meetings.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-08T21:41:03.814292Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9523528725",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Weekly AI Research meetings.md"
+      },
+      {
+        "id": "9523528848",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": null,
+        "parentId": "9523596087",
+        "order": 3,
+        "content": "Define and track a normalized improvement metric vs the naïve baseline",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Weekly AI Research meetings.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-08%20-%20Meeting%20-%20Weekly%20AI%20Research%20meetings.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-08T21:41:06.445490Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9523528848",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Weekly AI Research meetings.md"
+      },
+      {
+        "id": "9523528911",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": null,
+        "parentId": "9523596087",
+        "order": 4,
+        "content": "Standardize the synthetic generation on the V3 pattern (single activity per review) and iterate to make language more natural",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Weekly AI Research meetings.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-08%20-%20Meeting%20-%20Weekly%20AI%20Research%20meetings.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-08T21:41:08.504778Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9523528911",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Weekly AI Research meetings.md"
+      },
+      {
+        "id": "9523528959",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2357547778",
+        "sectionId": null,
+        "parentId": "9523596087",
+        "order": 5,
+        "content": "Review and vet Raquel's 100 appliance reviews and merge with my 50 to strengthen the real-data baseline",
+        "description": "[Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Weekly AI Research meetings.md](obsidian://open?vault=Rodrigo's%20Vault&file=Projects/2025%20AI%20Research/Meetings/2025-09-08%20-%20Meeting%20-%20Weekly%20AI%20Research%20meetings.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-08T21:41:09.796865Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9523528959",
+        "duration": null,
+        "deadline": null,
+        "path": "Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Weekly AI Research meetings.md"
+      },
+      {
+        "id": "9596438919",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 1,
+        "content": "Send a concise paragraph for Autosport Q&A describing the accuracy/validation process (no new metrics) to Leandro today",
+        "description": "[2025-09-30 - Meeting - Reuniao semanal Decoupling.md](obsidian://open?vault=Rodrigo's%20Vault&file=2025-09-30%20-%20Meeting%20-%20Reuniao%20semanal%20Decoupling.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-30T23:51:16.122094Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9596438919",
+        "duration": null,
+        "deadline": null,
+        "path": "2025-09-30 - Meeting - Reuniao semanal Decoupling.md"
+      },
+      {
+        "id": "9596468883",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2180299322",
+        "sectionId": null,
+        "parentId": null,
+        "order": 2,
+        "content": "test",
+        "description": "[Untitled 1.md](obsidian://open?vault=Rodrigo's%20Vault&file=Untitled%201.md)",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-10-01T00:11:16.405952Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9596468883",
+        "duration": null,
+        "deadline": null,
+        "path": "_System/Untitled 1.md"
+      },
+      {
+        "id": "9587576393",
+        "assignerId": null,
+        "assigneeId": null,
+        "projectId": "2308112757",
+        "sectionId": null,
+        "parentId": null,
+        "order": 1,
+        "content": "In the future, do timing of launch by channel by: manufacturer type, product type",
+        "description": "[2025-09-08 - Meeting - NPD-Channel-Customers.md](obsidian://open?vault=Rodrigo's%20Vault&file=2025-09-08%20-%20Meeting%20-%20NPD-Channel-Customers.md) - Completed 2025-10-01",
+        "isCompleted": false,
+        "labels": [
+          "obsidian"
+        ],
+        "priority": 1,
+        "commentCount": 0,
+        "creatorId": "16450172",
+        "createdAt": "2025-09-28T18:45:47.083979Z",
+        "due": null,
+        "url": "https://app.todoist.com/app/task/9587576393",
+        "duration": null,
+        "deadline": null,
+        "path": "2025-09-08 - Meeting - NPD-Channel-Customers.md",
+        "origin": "todoist",
+        "addedAt": "2025-09-28T18:45:47.083979Z"
+      }
+    ],
+    "projects": [],
+    "events": []
+  },
+  "fileMetadata": {
+    "Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Weekly AI Research meetings.md": {
+      "todoistTasks": [
+        "9523528725",
+        "9523528848",
+        "9523528911",
+        "9523528959"
+      ],
+      "todoistCount": 4
+    },
+    "Projects/2025 AI Research/Meetings/2025-09-08 - Meeting - Checkpoint Yash - Rodrigo.md": {
+      "todoistTasks": [
+        "9523553111"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2025 AI Research/Meetings/2025-09-05 - Meeting - Atividades para Prompt.md": {
+      "todoistTasks": [
+        "9523588347"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2025 AI Research/Meetings/2025-09-04 - Meeting - Checkpoint Davi - Rodrigo.md": {
+      "todoistTasks": [
+        "9511913370"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2025 ESG Patent Innovation/Meetings/2025-09-03 - Meeting - ESG-Patent-Innovation.md": {
+      "todoistTasks": [
+        "9509618253",
+        "9509618347",
+        "9509618422",
+        "9509619538",
+        "9509619678",
+        "9509619714"
+      ],
+      "todoistCount": 6
+    },
+    "Projects/2025 New Sources/Meetings/2025-09-01 - Meeting - Weekly New Sources.md": {
+      "todoistTasks": [],
+      "todoistCount": 0
+    },
+    "Projects/2025 AI Research/Meetings/2025-09-01 - Meeting - Weekly AI Research.md": {
+      "todoistTasks": [
+        "9499684256",
+        "9499684569",
+        "9499684650",
+        "9499684667"
+      ],
+      "todoistCount": 4
+    },
+    "Projects/2025 Decathlon/Meetings/2025-09-08 - Meeting - Apresentação Decoupling Decathlon.md": {
+      "todoistTasks": [
+        "9523670670",
+        "9523672728",
+        "9523673205"
+      ],
+      "todoistCount": 3
+    },
+    "Areas/Personal/Interactions/2025-08-22 - Meeting - Almoço com Leandro Guissoni.md": {
+      "todoistTasks": [
+        "9503545613"
+      ],
+      "todoistCount": 1
+    },
+    "Areas/Health/Psychiatry/Appointment/2025-09-15 - Psychiatrist - Dr. Thiago Apolinario.md": {
+      "todoistTasks": [
+        "9547410174",
+        "9547410342",
+        "9547410421",
+        "9547410454",
+        "9547410557"
+      ],
+      "todoistCount": 5
+    },
+    "Areas/Decomposer/Meetings/2025-09-15 - Meeting - iRobot Update.md": {
+      "todoistTasks": [
+        "9547419428",
+        "9547419852"
+      ],
+      "todoistCount": 2
+    },
+    "Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Prompt Analysis for Model Improvement.md": {
+      "todoistTasks": [
+        "9547424494",
+        "9547424568"
+      ],
+      "todoistCount": 2
+    },
+    "Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - Weekly AI Research.md": {
+      "todoistTasks": [
+        "9547425606",
+        "9547425743",
+        "9547426120",
+        "9548935950"
+      ],
+      "todoistCount": 4
+    },
+    "Projects/2025 AI Research/Meetings/2025-09-15 - Meeting - R&D Decoupling.md": {
+      "todoistTasks": [
+        "9547428811"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2025 New Sources/Meetings/2025-09-15 - Meeting - Weekly New Sources.md": {
+      "todoistTasks": [
+        "9547431868"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2023 English Fluency/Classes/2025-09-15 - English Class - André Linn.md": {
+      "todoistTasks": [
+        "9547522647"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2024 ESG Product Innovation/Meetings/2025-08-29 - Meeting - ESG-Product-Innovation.md": {
+      "todoistTasks": [],
+      "todoistCount": -9
+    },
+    "2025-09-20.md": {
+      "todoistTasks": [],
+      "todoistCount": 0
+    },
+    "Projects/2024 Job Market/Meetings/2025-02-12 - Meeting - Discussion Project in Distribution Agribusiness.md": {
+      "todoistTasks": [
+        "8878680888"
+      ],
+      "todoistCount": 1
+    },
+    "Areas/Decomposer/Meetings/2025-02-11 - Meeting - Alinhamento Semanal Decoupling.md": {
+      "todoistTasks": [
+        "8879450871",
+        "8879454427",
+        "8879454550",
+        "8879454640",
+        "8879463042",
+        "8879463282",
+        "8879463455",
+        "8879463591",
+        "8879463641"
+      ],
+      "todoistCount": 9
+    },
+    "Projects/2024 ESG Product Innovation/Meetings/2025-02-13 - Meeting - Rodrigo-Anatoli-Yakov.md": {
+      "todoistTasks": [
+        "8879446057",
+        "8879446979",
+        "8879447109",
+        "8879447324"
+      ],
+      "todoistCount": 4
+    },
+    "Projects/2025 Palestra Paripassu/Meetings/2025-09-02 - Meeting - Alinhamento palestrante Rodrigo Farinha - Jornada do Decisor.md": {
+      "todoistTasks": [
+        "9503128002",
+        "9503128674",
+        "9503129058",
+        "9503129102",
+        "9503129151"
+      ],
+      "todoistCount": 5
+    },
+    "Projects/2025 Executives Misalignment/Meetings/2025-09-26 - Meeting - Refinitiv data pull - Auto Companies.md": {
+      "todoistTasks": [
+        "9583367412"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2024 ESG Product Innovation/Meetings/2025-09-24 - Meeting - ESG-Patent-Innovation.md": {
+      "todoistTasks": [
+        "9583427590",
+        "9583427663",
+        "9583427743",
+        "9583427830",
+        "9583427910",
+        "9583427977",
+        "9583428989",
+        "9583429671"
+      ],
+      "todoistCount": 8
+    },
+    "Projects/2025 New Sources/Meetings/2025-09-23 - Meeting - Weekly New Sources.md": {
+      "todoistTasks": [
+        "9574027276",
+        "9574027580"
+      ],
+      "todoistCount": 2
+    },
+    "Areas/Decomposer/Meetings/2025-09-23 - Meeting - Reunião Semanal Decomposer.md": {
+      "todoistTasks": [
+        "9574026493",
+        "9574026532"
+      ],
+      "todoistCount": 2
+    },
+    "Projects/2025 AI Research/Meetings/2025-09-23 - Meeting - R&D Decoupling.md": {
+      "todoistTasks": [
+        "9574026092"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2025 AI Research/Meetings/2025-09-22 - Meeting - Weekly AI Research.md": {
+      "todoistTasks": [
+        "9583389049"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2025 Data Infrastructure/Meetings/2025-09-18 - Meeting - Discussao.md": {
+      "todoistTasks": [
+        "9576674137"
+      ],
+      "todoistCount": 1
+    },
+    "Projects/2017 LTO China/Meetings/2025-09-16 - Meeting - LTO China.md": {
+      "todoistTasks": [],
+      "todoistCount": 0
+    },
+    "2025-09-08 - Meeting - NPD-Channel-Customers.md": {
+      "todoistTasks": [
+        "9523479116",
+        "9523479540",
+        "9523479698",
+        "9523479850",
+        "9523480044",
+        "9523480467",
+        "9523480547",
+        "9523480691",
+        "9587576393"
+      ],
+      "todoistCount": 9
+    },
+    "2025-09-29 - Meeting - Weekly AI Algorithm Improvement.md": {
+      "todoistTasks": [],
+      "todoistCount": 0
+    },
+    "2025-09-30 - Meeting - Reuniao semanal Decoupling.md": {
+      "todoistTasks": [
+        "9596438919"
+      ],
+      "todoistCount": 1
+    },
+    "_System/Untitled 1.md": {
+      "todoistTasks": [],
+      "todoistCount": 0
+    }
+  },
+  "enableFullVaultSync": false,
+  "statistics": {},
+  "debugMode": false,
+  "removeCompletedTagOnReopen": true,
+  "cleanupMissingRemoteTasksOnSync": true,
+  "removeMarkersOnTodoistDelete": true,
+  "todoistCreationOnlyMode": false,
+  "todoistAPIToken": "b406d79357d7158b058b6fb0f1a2e4907f8820ba",
+  "disableTodoistInboundSync": true,
+  "todoistContentSanitized": true,
+  "excludedTagsFromTodoist": [
+    "obsidian",
+    "todoist",
+    "task"
+  ],
+  "excludedTagsFromObsidian": [
+    "obsidian",
+    "todoist",
+    "task"
+  ]
+}

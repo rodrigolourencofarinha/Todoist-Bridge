@@ -7560,16 +7560,12 @@ var DEFAULT_SETTINGS = {
   apiInitialized: false,
   defaultProjectName: "Inbox",
   automaticSynchronizationInterval: 300,
+  automaticSynchronizationEnabled: true,
   //default aync interval 300s
   todoistTasksData: { "projects": [], "tasks": [], "events": [] },
   fileMetadata: {},
-  enableFullVaultSync: false,
   statistics: {},
   debugMode: false,
-  removeCompletedTagOnReopen: true,
-  cleanupMissingRemoteTasksOnSync: true,
-  removeMarkersOnTodoistDelete: true,
-  todoistCreationOnlyMode: false
   //mySetting: 'default',
   //todoistTasksFilePath: 'todoistTasks.json'
 };
@@ -7598,6 +7594,13 @@ var TodoistBridgeSettingTab = class extends import_obsidian.PluginSettingTab {
         this.display();
       });
     });
+    new import_obsidian.Setting(containerEl).setName("Automatic Sync").setDesc("Toggle automatic synchronization on or off.").addToggle(
+      (component) => component.setValue(this.plugin.settings.automaticSynchronizationEnabled).onChange((value) => {
+        this.plugin.settings.automaticSynchronizationEnabled = value;
+        this.plugin.saveSettings();
+        this.plugin.updateAutomaticSyncInterval();
+      })
+    );
     new import_obsidian.Setting(containerEl).setName("Automatic Sync Interval Time").setDesc("Please specify the desired interval time, with seconds as the default unit. The default setting is 300 seconds, which corresponds to syncing once every 5 minutes. You can customize it, but it cannot be lower than 20 seconds.").addText(
       (text) => text.setPlaceholder("Sync interval").setValue(this.plugin.settings.automaticSynchronizationInterval.toString()).onChange(async (value) => {
         const intervalNum = Number(value);
@@ -7612,42 +7615,13 @@ var TodoistBridgeSettingTab = class extends import_obsidian.PluginSettingTab {
         }
         this.plugin.settings.automaticSynchronizationInterval = intervalNum;
         this.plugin.saveSettings();
+        this.plugin.updateAutomaticSyncInterval();
       })
     );
     new import_obsidian.Setting(containerEl).setName("Default Project").setDesc("New tasks are automatically synced to the default project. You can modify the project here.").addDropdown(
       (component) => component.addOption(this.plugin.settings.defaultProjectId, this.plugin.settings.defaultProjectName).addOptions(myProjectsOptions).onChange((value) => {
         this.plugin.settings.defaultProjectId = value;
         this.plugin.settings.defaultProjectName = this.plugin.cacheOperation.getProjectNameByIdFromCache(value);
-        this.plugin.saveSettings();
-      })
-    );
-    new import_obsidian.Setting(containerEl).setName("Full Vault Sync").setDesc("By default, only tasks marked with #todoist are synchronized. If this option is turned on, all tasks in the vault will be synchronized.").addToggle(
-      (component) => component.setValue(this.plugin.settings.enableFullVaultSync).onChange((value) => {
-        this.plugin.settings.enableFullVaultSync = value;
-        this.plugin.saveSettings();
-      })
-    );
-    new import_obsidian.Setting(containerEl).setName("Remove completed tag on reopen").setDesc("When a task is marked incomplete, delete the [completed:: …] inline field in the note.").addToggle(
-      (component) => component.setValue(this.plugin.settings.removeCompletedTagOnReopen).onChange((value) => {
-        this.plugin.settings.removeCompletedTagOnReopen = value;
-        this.plugin.saveSettings();
-      })
-    );
-    new import_obsidian.Setting(containerEl).setName("Cleanup missing tasks on sync").setDesc("If a Todoist task id no longer exists remotely, remove #todoist, link, and the todoist_id comment from the note line.").addToggle(
-      (component) => component.setValue(this.plugin.settings.cleanupMissingRemoteTasksOnSync).onChange((value) => {
-        this.plugin.settings.cleanupMissingRemoteTasksOnSync = value;
-        this.plugin.saveSettings();
-      })
-    );
-    new import_obsidian.Setting(containerEl).setName("Remove markers for deleted Todoist tasks").setDesc("When Todoist reports that a task was deleted, remove the #todoist tag, link, and Todoist metadata span from the note line.").addToggle(
-      (component) => component.setValue(this.plugin.settings.removeMarkersOnTodoistDelete).onChange((value) => {
-        this.plugin.settings.removeMarkersOnTodoistDelete = value;
-        this.plugin.saveSettings();
-      })
-    );
-    new import_obsidian.Setting(containerEl).setName("Creation-only mode").setDesc("Only create new Todoist tasks; skip updates, completions, deletions, and inbound sync.").addToggle(
-      (component) => component.setValue(this.plugin.settings.todoistCreationOnlyMode).onChange((value) => {
-        this.plugin.settings.todoistCreationOnlyMode = value;
         this.plugin.saveSettings();
       })
     );
@@ -7667,122 +7641,13 @@ var TodoistBridgeSettingTab = class extends import_obsidian.PluginSettingTab {
         }
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Check Database").setDesc("Check for possible issues: sync error, file renaming not updated, or missed tasks not synchronized.").addButton(
+    new import_obsidian.Setting(containerEl).setName("Check Database").setDesc("Generate a consistency report across Obsidian, data.json, and Todoist.").addButton(
       (button) => button.setButtonText("Check Database").onClick(async () => {
-        var _a2;
-        if (!this.plugin.settings.apiInitialized) {
-          return;
-        }
-        console.log("checking file metadata");
-        await this.plugin.cacheOperation.checkFileMetadata();
-        this.plugin.saveSettings();
-        const metadatas = await this.plugin.cacheOperation.getFileMetadatas();
         try {
-          const projectId = this.plugin.settings.defaultProjectId;
-          let options = {};
-          options.projectId = projectId;
-          const tasks = await this.plugin.todoistRestAPI.GetActiveTasks(options);
-          let length = tasks.length;
-          if (length >= 300) {
-            console.warn(`The number of tasks in the default project exceeds 300 (upper limit).`);
-          }
+          await this.plugin.runDatabaseCheck();
         } catch (error) {
-          console.error(`An error occurred while get tasks from todoist: ${error.message}`);
-        }
-        if (!await this.plugin.checkAndHandleSyncLock())
-          return;
-        console.log("checking deleted tasks");
-        for (const key in metadatas) {
-          const value = metadatas[key];
-          for (const taskId of value.todoistTasks) {
-            let taskObject;
-            try {
-              taskObject = await this.plugin.cacheOperation.loadTaskFromCacheyID(taskId);
-            } catch (error) {
-              console.error(`An error occurred while loading task cache: ${error.message}`);
-            }
-            if (!taskObject) {
-              console.log(`The task data of the ${taskId} is empty.`);
-              try {
-                taskObject = await this.plugin.todoistRestAPI.getTaskById(taskId);
-              } catch (error) {
-                if (error.message.includes("404")) {
-                  console.log(`Task ${taskId} seems to not exist.`);
-                  // Clean markers from the file and remove from metadata/cache
-                  try {
-                    await this.plugin.fileOperation.removeTodoistMarkersForTask(key, taskId);
-                  } catch {}
-                  const fm = await this.plugin.cacheOperation.getFileMetadata(key);
-                  if (fm) {
-                    const newFM = { ...fm };
-                    newFM.todoistTasks = (newFM.todoistTasks || []).filter((id) => id !== taskId);
-                    newFM.todoistCount = Math.max(0, ((newFM.todoistCount || 1) - 1));
-                    await this.plugin.cacheOperation.updateFileMetadata(key, newFM);
-                  }
-                  try { this.plugin.cacheOperation.deleteTaskFromCacheByIDs([taskId]); } catch {}
-                  this.plugin.saveSettings();
-                  continue;
-                } else {
-                  console.error(error);
-                  continue;
-                }
-              }
-            }
-          }
-          ;
-        }
-        this.plugin.saveSettings();
-        console.log("checking renamed files");
-        try {
-          for (const key in metadatas) {
-            const value = metadatas[key];
-            const newDescription = this.plugin.taskParser.getObsidianUrlFromFilepath(key);
-            for (const taskId of value.todoistTasks) {
-              let taskObject;
-              try {
-                taskObject = await this.plugin.cacheOperation.loadTaskFromCacheyID(taskId);
-              } catch (error) {
-                console.error(`An error occurred while loading task ${taskId} from cache: ${error.message}`);
-                console.log(taskObject);
-              }
-              if (!taskObject) {
-                console.log(`Task ${taskId} seems to not exist.`);
-                continue;
-              }
-              if (!(taskObject == null ? void 0 : taskObject.description)) {
-                console.log(`The description of the task ${taskId} is empty.`);
-              }
-              const oldDescription = (_a2 = taskObject == null ? void 0 : taskObject.description) != null ? _a2 : "";
-              if (newDescription != oldDescription) {
-                console.log("Preparing to update description.");
-                console.log(oldDescription);
-                console.log(newDescription);
-                try {
-                } catch (error) {
-                  console.error(`An error occurred while updating task discription: ${error.message}`);
-                }
-              }
-            }
-            ;
-          }
-          console.log("checking unsynced tasks");
-          const files = this.app.vault.getFiles();
-          files.forEach(async (v, i) => {
-            if (v.extension == "md") {
-              try {
-                await this.plugin.fileOperation.addTodoistLinkToFile(v.path);
-                if (this.plugin.settings.enableFullVaultSync) {
-                  await this.plugin.fileOperation.addTodoistTagToFile(v.path);
-                }
-              } catch (error) {
-                console.error(`An error occurred while check new tasks in the file: ${v.path}, ${error.message}`);
-              }
-            }
-          });
-          this.plugin.syncLock = false;
-        } catch (error) {
-          console.error(`An error occurred while scanning the vault.:${error}`);
-          this.plugin.syncLock = false;
+          console.error("Todoist Bridge: Database check failed", error);
+          new import_obsidian.Notice("Todoist Bridge: Database check failed");
         }
       })
     );
@@ -7860,7 +7725,7 @@ var TodoistRestAPI = class {
     }
   }
   //Also note that to remove the due date of a task completely, you should set the due_string parameter to no date or no due date.
-  //api 没有 update task project id 的函数
+  // API does not provide a function to update the task project ID
   async UpdateTask(taskId, updates) {
     const api = await this.initializeAPI();
     if (!taskId) {
@@ -8302,16 +8167,22 @@ var TaskParser = class {
     if (!labels.map((x) => x.toLowerCase()).includes("obsidian")) {
       labels.push("obsidian");
     }
-    let projectId = this.plugin.cacheOperation.getDefaultProjectIdForFilepath(filepath);
+    let projectId = this.plugin.settings.defaultProjectId;
     let projectName = this.plugin.cacheOperation.getProjectNameByIdFromCache(projectId);
     if (hasParent) {
-      projectId = parentTaskObject.projectId;
-      projectName = this.plugin.cacheOperation.getProjectNameByIdFromCache(projectId);
+      if (parentTaskObject && parentTaskObject.projectId) {
+        projectId = parentTaskObject.projectId;
+        projectName = this.plugin.cacheOperation.getProjectNameByIdFromCache(projectId);
+      } else {
+        hasParent = false;
+        parentId = null;
+        parentTaskObject = null;
+      }
     }
     if (!hasParent) {
       for (const label of labels) {
-        let labelName = label.replace(/#/g, "");
-        let hasProjectId = this.plugin.cacheOperation.getProjectIdByNameFromCache(labelName);
+        const labelName = label.replace(/#/g, "");
+        const hasProjectId = this.plugin.cacheOperation.getProjectIdByNameFromCache(labelName);
         if (!hasProjectId) {
           continue;
         }
@@ -8319,6 +8190,9 @@ var TaskParser = class {
         projectId = hasProjectId;
         break;
       }
+    }
+    if (!projectId) {
+      projectId = this.plugin.settings.defaultProjectId;
     }
     const content = this.getTaskContentFromLineText(textWithoutIndentation);
     const isCompleted = this.isTaskCheckboxChecked(textWithoutIndentation);
@@ -8446,11 +8320,11 @@ var TaskParser = class {
   async taskProjectCompare(lineTask, todoistTask) {
     return lineTask.projectId === todoistTask.projectId;
   }
-  //判断任务是否缩进
+  // Determine whether the task is indented
   isIndentedTask(text) {
     return REGEX.TASK_INDENTATION.test(text);
   }
-  //判断制表符的数量
+  // Determine the number of tab characters
   //console.log(getTabIndentation("\t\t- [x] This is a task with two tabs")); // 2
   //console.log(getTabIndentation("  - [x] This is a task without tabs")); // 0
   getTabIndentation(lineText) {
@@ -8467,20 +8341,20 @@ var TaskParser = class {
     const regex = /^([ \t]*)?- \[(x| )\] /;
     return text.replace(regex, "- [$2] ");
   }
-  //判断line是不是空行
+  // Determine whether the line is blank
   isLineBlank(lineText) {
     return REGEX.BLANK_LINE.test(lineText);
   }
-  //在linetext中插入日期
+  // Insert a date into linetext
   insertDueDateBeforeTodoist(text, dueDate) {
     const regex = new RegExp(`(${keywords.TODOIST_TAG})`);
     return text.replace(regex, `\u{1F4C5} ${dueDate} $1`);
   }
   //extra date from obsidian event
-  // 使用示例
+  // Usage example
   //const str = "2023-03-27T15:59:59.000000Z";
   //const dateStr = ISOStringToLocalDateString(str);
-  //console.log(dateStr); // 输出 2023-03-27
+  //console.log(dateStr); // outputs 2023-03-27
   ISOStringToLocalDateString(utcTimeString) {
     try {
       if (utcTimeString === null) {
@@ -8500,10 +8374,10 @@ var TaskParser = class {
     }
   }
   //extra date from obsidian event
-  // 使用示例
+  // Usage example
   //const str = "2023-03-27T15:59:59.000000Z";
   //const dateStr = ISOStringToLocalDatetimeString(str);
-  //console.log(dateStr); // 输出 Mon Mar 27 2023 23:59:59 GMT+0800 (China Standard Time)
+  //console.log(dateStr); // outputs Mon Mar 27 2023 23:59:59 GMT+0800 (China Standard Time)
   ISOStringToLocalDatetimeString(utcTimeString) {
     try {
       if (utcTimeString === null) {
@@ -8519,10 +8393,10 @@ var TaskParser = class {
     }
   }
   //convert date from obsidian event
-  // 使用示例
+  // Usage example
   //const str = "2023-03-27";
   //const utcStr = localDateStringToUTCDatetimeString(str);
-  //console.log(dateStr); // 输出 2023-03-27T00:00:00.000Z
+  //console.log(dateStr); // outputs 2023-03-27T00:00:00.000Z
   localDateStringToUTCDatetimeString(localDateString) {
     try {
       if (localDateString === null) {
@@ -8538,10 +8412,10 @@ var TaskParser = class {
     }
   }
   //convert date from obsidian event
-  // 使用示例
+  // Usage example
   //const str = "2023-03-27";
   //const utcStr = localDateStringToUTCDateString(str);
-  //console.log(dateStr); // 输出 2023-03-27
+  //console.log(dateStr); // outputs 2023-03-27
   localDateStringToUTCDateString(localDateString) {
     try {
       if (localDateString === null) {
@@ -8574,7 +8448,7 @@ var TaskParser = class {
     // Place the link after the #todoist tag
     return linetext.replace(regex, "$& " + todoistLink);
   }
-  //检查是否包含todoist link
+  // Check whether the content includes a Todoist link
   hasTodoistLink(lineText) {
     return REGEX.TODOIST_LINK.test(lineText);
   }
@@ -8611,6 +8485,51 @@ var CacheOperation = class {
     }
     metadatas[filepath].todoistTasks = newMetadata.todoistTasks;
     metadatas[filepath].todoistCount = newMetadata.todoistCount;
+    this.plugin.settings.fileMetadata = metadatas;
+  }
+  removeTaskFromMetadata(filepath, taskId) {
+    if (!filepath) {
+      return;
+    }
+    const metadatas = this.plugin.settings.fileMetadata;
+    if (!metadatas || !metadatas[filepath]) {
+      return;
+    }
+    const metadata = metadatas[filepath];
+    const taskIdStr = String(taskId);
+    if (Array.isArray(metadata.todoistTasks)) {
+      metadata.todoistTasks = metadata.todoistTasks.filter((id) => String(id) !== taskIdStr);
+    } else {
+      metadata.todoistTasks = [];
+    }
+    if (typeof metadata.todoistCount === "number") {
+      metadata.todoistCount = metadata.todoistTasks.length;
+    } else {
+      metadata.todoistCount = metadata.todoistTasks.length;
+    }
+    metadatas[filepath] = metadata;
+    this.plugin.settings.fileMetadata = metadatas;
+  }
+  addTaskToMetadata(filepath, taskId) {
+    if (!filepath) {
+      return;
+    }
+    const metadatas = this.plugin.settings.fileMetadata;
+    if (!metadatas[filepath]) {
+      metadatas[filepath] = { todoistTasks: [], todoistCount: 0 };
+    }
+    const metadata = metadatas[filepath];
+    const taskIdStr = String(taskId);
+    if (!Array.isArray(metadata.todoistTasks)) {
+      metadata.todoistTasks = [];
+    } else {
+      metadata.todoistTasks = metadata.todoistTasks.map((id) => String(id));
+    }
+    if (!metadata.todoistTasks.includes(taskIdStr)) {
+      metadata.todoistTasks.push(taskIdStr);
+    }
+    metadata.todoistCount = Array.isArray(metadata.todoistTasks) ? metadata.todoistTasks.length : 0;
+    metadatas[filepath] = metadata;
     this.plugin.settings.fileMetadata = metadatas;
   }
   async deleteTaskIdFromMetadata(filepath, taskId) {
@@ -8660,34 +8579,7 @@ var CacheOperation = class {
       }
     }
   }
-  getDefaultProjectNameForFilepath(filepath) {
-    const metadatas = this.plugin.settings.fileMetadata;
-    if (!metadatas[filepath] || metadatas[filepath].defaultProjectId === void 0) {
-      return this.plugin.settings.defaultProjectName;
-    } else {
-      const defaultProjectId = metadatas[filepath].defaultProjectId;
-      const defaultProjectName = this.getProjectNameByIdFromCache(defaultProjectId);
-      return defaultProjectName;
-    }
-  }
-  getDefaultProjectIdForFilepath(filepath) {
-    const metadatas = this.plugin.settings.fileMetadata;
-    if (!metadatas[filepath] || metadatas[filepath].defaultProjectId === void 0) {
-      return this.plugin.settings.defaultProjectId;
-    } else {
-      const defaultProjectId = metadatas[filepath].defaultProjectId;
-      return defaultProjectId;
-    }
-  }
-  setDefaultProjectIdForFilepath(filepath, defaultProjectId) {
-    const metadatas = this.plugin.settings.fileMetadata;
-    if (!metadatas[filepath]) {
-      metadatas[filepath] = {};
-    }
-    metadatas[filepath].defaultProjectId = defaultProjectId;
-    this.plugin.settings.fileMetadata = metadatas;
-  }
-  // 从 Cache读取所有task
+  // Read all tasks from the cache
   loadTasksFromCache() {
     try {
       const savedTasks = this.plugin.settings.todoistTasksData.tasks;
@@ -8697,16 +8589,41 @@ var CacheOperation = class {
       return [];
     }
   }
-  // 覆盖保存所有task到cache
+  getActiveTasksByFilepath(filepath) {
+    if (!filepath) {
+      return [];
+    }
+    const savedTasks = this.loadTasksFromCache();
+    const targetPath = String(filepath);
+    return savedTasks.filter((task) => task && task.path === targetPath && task.isCompleted !== true);
+  }
+  getActiveTaskIdsByFilepath(filepath) {
+    const activeTasks = this.getActiveTasksByFilepath(filepath);
+    return new Set(activeTasks.map((task) => task.id));
+  }
+  // Overwrite and save all tasks to the cache
   saveTasksToCache(newTasks) {
     try {
-      this.plugin.settings.todoistTasksData.tasks = newTasks;
+      const normalizedTasks = Array.isArray(newTasks) ? newTasks.map((task) => this.normalizeTaskForCache(task)).filter((task) => !!task) : [];
+      const uniqueTasks = [];
+      const seen = new Set();
+      for (const task of normalizedTasks) {
+        if (!task) {
+          continue;
+        }
+        if (seen.has(task.id)) {
+          continue;
+        }
+        seen.add(task.id);
+        uniqueTasks.push(task);
+      }
+      this.plugin.settings.todoistTasksData.tasks = uniqueTasks;
     } catch (error) {
       console.error(`Error saving tasks to Cache: ${error}`);
       return false;
     }
   }
-  // append event 到 Cache
+  // Append event to the cache
   appendEventToCache(event) {
     try {
       this.plugin.settings.todoistTasksData.events.push(event);
@@ -8714,7 +8631,7 @@ var CacheOperation = class {
       console.error(`Error append event to Cache: ${error}`);
     }
   }
-  // append events 到 Cache
+  // Append events to the cache
   appendEventsToCache(events) {
     try {
       this.plugin.settings.todoistTasksData.events.push(...events);
@@ -8722,7 +8639,7 @@ var CacheOperation = class {
       console.error(`Error append events to Cache: ${error}`);
     }
   }
-  // 从 Cache 文件中读取所有events
+  // Read all events from the cache file
   loadEventsFromCache() {
     try {
       const savedEvents = this.plugin.settings.todoistTasksData.events;
@@ -8731,30 +8648,83 @@ var CacheOperation = class {
       console.error(`Error loading events from Cache: ${error}`);
     }
   }
-  // 追加到 Cache 文件
+  // Normalize a task before storing it in the cache
+  normalizeTaskForCache(task) {
+    try {
+      if (!task) {
+        return null;
+      }
+      const taskId = task.id != null ? String(task.id) : null;
+      if (!taskId) {
+        return null;
+      }
+      const normalizedPath = typeof task.path === "string" ? task.path.trim() : "";
+      if (!normalizedPath) {
+        return null;
+      }
+      const isCompleted = task.completed === true || task.isCompleted === true;
+      if (isCompleted) {
+        return null;
+      }
+      const normalizedTask = { ...task, id: taskId, path: normalizedPath, isCompleted: false };
+      if (!normalizedTask.origin) {
+        normalizedTask.origin = "todoist";
+      }
+      if (!normalizedTask.addedAt) {
+        normalizedTask.addedAt = normalizedTask.createdAt || new Date().toISOString();
+      }
+      return normalizedTask;
+    } catch (error) {
+      console.error(`Error normalizing task for Cache: ${error}`);
+      return null;
+    }
+  }
+
   appendTaskToCache(task) {
     try {
-      if (task === null) {
-        return;
+      if (!this.plugin.settings.todoistTasksData || !Array.isArray(this.plugin.settings.todoistTasksData.tasks)) {
+        this.plugin.settings.todoistTasksData.tasks = [];
       }
       const savedTasks = this.plugin.settings.todoistTasksData.tasks;
-      this.plugin.settings.todoistTasksData.tasks.push(task);
+      const taskId = task && task.id != null ? String(task.id) : null;
+      if (!taskId) {
+        return;
+      }
+      const existingIndex = savedTasks.findIndex((t) => t.id === taskId);
+      const normalizedTask = this.normalizeTaskForCache(task);
+      if (!normalizedTask) {
+        if (existingIndex !== -1) {
+          savedTasks.splice(existingIndex, 1);
+          this.plugin.settings.todoistTasksData.tasks = savedTasks;
+        }
+        return;
+      }
+      if (existingIndex !== -1) {
+        savedTasks[existingIndex] = { ...savedTasks[existingIndex], ...normalizedTask };
+      } else {
+        savedTasks.push(normalizedTask);
+      }
+      this.plugin.settings.todoistTasksData.tasks = savedTasks;
     } catch (error) {
       console.error(`Error appending task to Cache: ${error}`);
     }
   }
-  //读取指定id的任务
+  // Read the task with the specified ID
   loadTaskFromCacheyID(taskId) {
     try {
       const savedTasks = this.plugin.settings.todoistTasksData.tasks;
-      const savedTask = savedTasks.find((t) => t.id === taskId);
-      return savedTask;
+      const id = taskId != null ? String(taskId) : null;
+      if (!id) {
+        return null;
+      }
+      const savedTask = savedTasks.find((t) => t.id === id);
+      return savedTask || null;
     } catch (error) {
       console.error(`Error finding task from Cache: ${error}`);
-      return [];
+      return null;
     }
   }
-  //覆盖update指定id的task
+  // Overwrite and update the task with the specified ID
   updateTaskToCacheByID(task) {
     try {
       this.deleteTaskFromCache(task.id);
@@ -8764,7 +8734,7 @@ var CacheOperation = class {
       return [];
     }
   }
-  //due 的结构  {date: "2025-02-25",isRecurring: false,lang: "en",string: "2025-02-25"}
+  // Structure of due {date: "2025-02-25",isRecurring: false,lang: "en",string: "2025-02-25"}
   modifyTaskToCacheByID(taskId, { content, due }) {
     try {
       const savedTasks = this.plugin.settings.todoistTasksData.tasks;
@@ -8789,39 +8759,70 @@ var CacheOperation = class {
     } catch (error) {
     }
   }
-  //open a task status
-  reopenTaskToCacheByID(taskId) {
+  setTaskContentInCache(taskId, content) {
     try {
       const savedTasks = this.plugin.settings.todoistTasksData.tasks;
-      for (let i = 0; i < savedTasks.length; i++) {
-        if (savedTasks[i].id === taskId) {
-          savedTasks[i].isCompleted = false;
-          break;
+      const index = savedTasks.findIndex((task) => task.id === taskId);
+      if (index !== -1) {
+        savedTasks[index].content = content;
+        this.plugin.settings.todoistTasksData.tasks = savedTasks;
+      }
+    } catch (error) {
+      console.error(`Error updating task content in cache: ${error}`);
+    }
+  }
+  //open a task status
+  async reopenTaskToCacheByID(taskId) {
+    try {
+      const savedTasks = this.plugin.settings.todoistTasksData.tasks;
+      const existingIndex = savedTasks.findIndex((task) => task.id === taskId);
+      if (existingIndex !== -1) {
+        savedTasks[existingIndex].isCompleted = false;
+        this.plugin.settings.todoistTasksData.tasks = savedTasks;
+        return savedTasks[existingIndex];
+      }
+      const task = await this.plugin.todoistRestAPI.getTaskById(taskId);
+      if (!task) {
+        return null;
+      }
+      let filepath = task.path;
+      if (!filepath) {
+        try {
+          filepath = await this.plugin.fileOperation.searchFilepathsByTaskidInVault(taskId);
+        } catch (err) {
+          console.error(`Error resolving filepath for task ${taskId}:`, err);
         }
       }
+      if (!filepath) {
+        return null;
+      }
+      task.path = filepath;
+      task.isCompleted = false;
+      task.id = taskId;
+      if (!task.origin) {
+        task.origin = "todoist";
+      }
+      if (!task.addedAt) {
+        task.addedAt = task.createdAt || new Date().toISOString();
+      }
+      savedTasks.push(task);
       this.plugin.settings.todoistTasksData.tasks = savedTasks;
+      return task;
     } catch (error) {
       console.error(`Error open task to Cache file: ${error}`);
-      return [];
+      return null;
     }
   }
   //close a task status
   closeTaskToCacheByID(taskId) {
     try {
-      const savedTasks = this.plugin.settings.todoistTasksData.tasks;
-      for (let i = 0; i < savedTasks.length; i++) {
-        if (savedTasks[i].id === taskId) {
-          savedTasks[i].isCompleted = true;
-          break;
-        }
-      }
-      this.plugin.settings.todoistTasksData.tasks = savedTasks;
+      this.deleteTaskFromCache(taskId);
     } catch (error) {
       console.error(`Error close task to Cache file: ${error}`);
       throw error;
     }
   }
-  // 通过 ID 删除任务
+  // Delete a task by ID
   deleteTaskFromCache(taskId) {
     try {
       const savedTasks = this.plugin.settings.todoistTasksData.tasks;
@@ -8831,7 +8832,7 @@ var CacheOperation = class {
       console.error(`Error deleting task from Cache file: ${error}`);
     }
   }
-  // 通过 ID 数组 删除task
+  // Delete tasks by an array of IDs
   deleteTaskFromCacheByIDs(deletedTaskIds) {
     try {
       const savedTasks = this.plugin.settings.todoistTasksData.tasks;
@@ -8841,7 +8842,7 @@ var CacheOperation = class {
       console.error(`Error deleting task from Cache : ${error}`);
     }
   }
-  //通过 name 查找 project id
+  // Find the project ID by name
   getProjectIdByNameFromCache(projectName) {
     try {
       const savedProjects = this.plugin.settings.todoistTasksData.projects;
@@ -8935,8 +8936,8 @@ var FileOperation = class {
   });
   }
   */
-  // 完成一个任务，将其标记为已完成
-  async completeTaskInTheFile(taskId, completedAt) {
+  // Complete a task and mark it as done
+  async completeTaskInTheFile(taskId, completedAt, options = {}) {
     const currentTask = await this.plugin.cacheOperation.loadTaskFromCacheyID(taskId);
     if (!currentTask) {
       return;
@@ -8946,6 +8947,7 @@ var FileOperation = class {
     const content = await this.app.vault.read(file);
     const lines = content.split("\n");
     let modified = false;
+    const metadataKey = (options == null ? void 0 : options.metadataKey) || "todoist_completion";
     const deriveCompletionDate = (value) => {
       if (!value) {
         return new Date();
@@ -8953,36 +8955,42 @@ var FileOperation = class {
       const parsed = new Date(value);
       return isNaN(parsed.getTime()) ? new Date() : parsed;
     };
-    const pad = (n) => (n < 10 ? "0" + n : "" + n);
     const completionDate = deriveCompletionDate(completedAt);
-    const completedInlinePattern = /\s*completed::\s*\d{4}-\d{2}-\d{2}/gi;
-    const timestamp = `${completionDate.getFullYear()}${pad(completionDate.getMonth() + 1)}${pad(completionDate.getDate())}T${pad(completionDate.getHours())}${pad(completionDate.getMinutes())}${pad(completionDate.getSeconds())}`;
+    const isoTimestamp = completionDate.toISOString();
+    const dateToken = (options == null ? void 0 : options.displayDate) || isoTimestamp.slice(0, 10);
+    const metadataToken = `[${metadataKey}:: ${dateToken}]`;
+    const completionInlinePattern = new RegExp(`\s*(?:completed|${metadataKey})::\s*[\w:-]+`, "gi");
+    const metadataTokenPattern = new RegExp(`\[${metadataKey}::\s*[^\]]+\]`, "gi");
+    const legacyTokenPattern = /\[completed::\s*[^\]]+\]/gi;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (line.includes(taskId) && this.plugin.taskParser.hasTodoistTag(line)) {
-        let newLine = line.replace(/- \[( |x|X)\]/, "- [x]");
+        let newLine = line;
+        const checkboxPattern = /([-*]\s*)\[(?:x|X| )\]/;
+        if (checkboxPattern.test(newLine)) {
+          newLine = newLine.replace(checkboxPattern, "$1[x]");
+        } else {
+          newLine = newLine.replace(/^(\s*)([-*]?)/, (match, indent, bullet) => {
+            const prefix = bullet && bullet.trim() ? `${indent}${bullet.trim()} ` : `${indent}- `;
+            return `${prefix}[x]`;
+          });
+        }
         try {
           const spanPattern = /<span class="todoist-bridge">([\s\S]*?)<\/span>/i;
           const commentPattern = /<!--\s*([\s\S]*?)\s*-->/;
-          const completedTokenPattern = /\[completed::\s*[^\]]+\]/;
           const ensureMetadata = (metadata) => {
             let result = (metadata || "").replace(/\s+/g, " ").trim();
+            result = result.replace(legacyTokenPattern, "");
+            result = result.replace(metadataTokenPattern, "");
             if (!/\[todoist_id::\s*[^\]]+\]/.test(result)) {
               result = `[todoist_id:: ${taskId}] ${result}`.trim();
             }
-            if (completedTokenPattern.test(result)) {
-              result = result.replace(/(\[completed::\s*)[^\]]+(\])/, `$1${timestamp}$2`);
-            } else {
-              if (result.length) {
-                result += " ";
-              }
-              result += `[completed:: ${timestamp}]`;
-            }
-            result = result.replace(/\s{2,}/g, " ").trim();
-            if (!result.endsWith(" ")) {
+            result = result.replace(legacyTokenPattern, "").replace(metadataTokenPattern, "").trim();
+            if (result.length && !result.endsWith(" ")) {
               result += " ";
             }
-            return result;
+            result += metadataToken;
+            return result.replace(/\s{2,}/g, " ").trim() + " ";
           };
           if (spanPattern.test(newLine)) {
             const match = spanPattern.exec(newLine);
@@ -8996,8 +9004,11 @@ var FileOperation = class {
             const metadata = ensureMetadata("");
             newLine = `${newLine.trimEnd()} <span class="todoist-bridge">${metadata}</span>`;
           }
-        } catch {}
-        newLine = newLine.replace(completedInlinePattern, " ");
+        } catch (error) {
+          console.error("Failed to normalize Todoist metadata span:", error);
+        }
+        newLine = newLine.replace(legacyTokenPattern, " ");
+        newLine = newLine.replace(completionInlinePattern, " ");
         newLine = newLine.replace(/\s{2,}/g, " ").trimEnd();
         lines[i] = newLine;
         modified = true;
@@ -9009,8 +9020,7 @@ var FileOperation = class {
       await this.app.vault.modify(file, newContent);
     }
   }
-
-  // uncheck 已完成的任务，
+  // Uncheck a completed task
   async uncompleteTaskInTheFile(taskId) {
     const currentTask = await this.plugin.cacheOperation.loadTaskFromCacheyID(taskId);
     if (!currentTask) {
@@ -9021,28 +9031,14 @@ var FileOperation = class {
     const content = await this.app.vault.read(file);
     const lines = content.split("\n");
     let modified = false;
+    const completionInlinePattern = /\s*(?:completed|todoist_completion)::\s*[\w:-]+/gi;
+    const metadataCompletionPattern = /\[(?:completed|todoist_completion)::\s*[^\]]+\]/gi;
+    const completionCommentPattern = /<!--\s*\[(?:completed|todoist_completion)::\s*[^\]]+\]\s*-->/gi;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (line.includes(taskId) && this.plugin.taskParser.hasTodoistTag(line)) {
         let newLine = line.replace(/- \[(x|X)\]/g, "- [ ]");
-        newLine = newLine.replace(/\s*completed::\s*\d{4}-\d{2}-\d{2}/gi, " ");
-        if (this.plugin.settings.removeCompletedTagOnReopen) {
-          newLine = newLine.replace(/<span class="todoist-bridge">([\s\S]*?)<\/span>/gi, (match, metadata) => {
-            let cleaned = (metadata || "").replace(/\s+/g, " ").trim();
-            cleaned = cleaned.replace(/\[completed::\s*[^\]]+\]/gi, "").replace(/\s+/g, " ").trim();
-            if (!cleaned) {
-              return "";
-            }
-            if (!cleaned.endsWith(" ")) {
-              cleaned += " ";
-            }
-            return `<span class="todoist-bridge">${cleaned}</span>`;
-          });
-          newLine = newLine.replace(/\s*(\[completed::\s*[^\]]+\])\s*/g, " ");
-          newLine = newLine.replace(/<!--\s*\[completed::\s*[^\]]+\]\s*-->/g, "");
-          newLine = newLine.replace(/(<!--[\s\S]*?)\s*\[completed::\s*[^\]]+\]\s*([\s\S]*?-->)/, "$1 $2");
-          newLine = newLine.replace(/<!--\s*-->/g, "");
-        }
+        newLine = newLine.replace(completionInlinePattern, " ");
         newLine = newLine.replace(/\s{2,}/g, " ").trimEnd();
         lines[i] = newLine;
         modified = true;
@@ -9055,71 +9051,7 @@ var FileOperation = class {
     }
   }
 
-  //add #todoist at the end of task line, if full vault sync enabled
-  async addTodoistTagToFile(filepath) {
-    const file = this.app.vault.getAbstractFileByPath(filepath);
-    const content = await this.app.vault.read(file);
-    // If file contains Obsidian comment markers, skip to avoid conflicts
-    if (typeof content === "string" && content.includes("%%")) {
-      return;
-    }
-    const lines = content.split("\n");
-    let modified = false;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (!this.plugin.taskParser.isMarkdownTask(line)) {
-        continue;
-      }
-      if (this.plugin.taskParser.getTaskContentFromLineText(line) == "") {
-        continue;
-      }
-      if (!this.plugin.taskParser.hasTodoistId(line) && !this.plugin.taskParser.hasTodoistTag(line)) {
-        const newLine = this.plugin.taskParser.addTodoistTag(line);
-        lines[i] = newLine;
-        modified = true;
-      }
-    }
-    if (modified) {
-      console.log(`New task found in files ${filepath}`);
-      const newContent = lines.join("\n");
-      await this.app.vault.modify(file, newContent);
-      const metadata = await this.plugin.cacheOperation.getFileMetadata(filepath);
-      if (!metadata) {
-        await this.plugin.cacheOperation.newEmptyFileMetadata(filepath);
-      }
-    }
-  }
-  //add todoist at the line
-  async addTodoistLinkToFile(filepath) {
-    const file = this.app.vault.getAbstractFileByPath(filepath);
-    const content = await this.app.vault.read(file);
-    const lines = content.split("\n");
-    let modified = false;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (this.plugin.taskParser.hasTodoistId(line) && this.plugin.taskParser.hasTodoistTag(line)) {
-        if (this.plugin.taskParser.hasTodoistLink(line)) {
-          return;
-        }
-        console.log(line);
-        const taskID = this.plugin.taskParser.getTodoistIdFromLineText(line);
-        const taskObject = this.plugin.cacheOperation.loadTaskFromCacheyID(taskID);
-        const todoistLink = taskObject.url;
-        const link = `[link](${todoistLink})`;
-        const newLine = this.plugin.taskParser.addTodoistLink(line, link);
-        console.log(newLine);
-        lines[i] = newLine;
-        modified = true;
-      } else {
-        continue;
-      }
-    }
-    if (modified) {
-      const newContent = lines.join("\n");
-      await this.app.vault.modify(file, newContent);
-    }
-  }
-  // Remove #todoist, [link](...), and todoist_id markers for a specific task id in a file
+      // Remove #todoist, [link](...), and todoist_id markers for a specific task id in a file
   async removeTodoistMarkersForTask(filepath, taskId) {
     const file = this.app.vault.getAbstractFileByPath(filepath);
     const content = await this.app.vault.read(file);
@@ -9196,35 +9128,6 @@ var FileOperation = class {
       console.error("Error scanning vault for Todoist markers:", error);
     }
     return null;
-  }
-  //add #todoist at the end of task line, if full vault sync enabled
-  async addTodoistTagToLine(filepath, lineText, lineNumber, fileContent) {
-    const file = this.app.vault.getAbstractFileByPath(filepath);
-    const content = fileContent;
-    const lines = content.split("\n");
-    let modified = false;
-    const line = lineText;
-    if (!this.plugin.taskParser.isMarkdownTask(line)) {
-      return;
-    }
-    if (this.plugin.taskParser.getTaskContentFromLineText(line) == "") {
-      return;
-    }
-    if (!this.plugin.taskParser.hasTodoistId(line) && !this.plugin.taskParser.hasTodoistTag(line)) {
-      const newLine = this.plugin.taskParser.addTodoistTag(line);
-      lines[lineNumber] = newLine;
-      modified = true;
-    }
-    if (modified) {
-      console.log(`New task found in files ${filepath}`);
-      const newContent = lines.join("\n");
-      console.log(newContent);
-      await this.app.vault.modify(file, newContent);
-      const metadata = await this.plugin.cacheOperation.getFileMetadata(filepath);
-      if (!metadata) {
-        await this.plugin.cacheOperation.newEmptyFileMetadata(filepath);
-      }
-    }
   }
   // sync updated task content  to file
   async syncUpdatedTaskContentToTheFile(evt) {
@@ -9313,7 +9216,7 @@ var FileOperation = class {
       await this.app.vault.modify(file, newContent);
     }
   }
-  //避免使用该方式，通过view可以获得实时更新的value
+  // Avoid using this method; view provides real-time value updates
   async readContentFromFilePath(filepath) {
     try {
       const file = this.app.vault.getAbstractFileByPath(filepath);
@@ -9325,7 +9228,7 @@ var FileOperation = class {
     }
   }
   //get line text from file path
-  //请使用 view.editor.getLine，read 方法有延迟
+  // Use view.editor.getLine; the read method has a delay
   async getLineTextFromFilePath(filepath, lineNumber) {
     const file = this.app.vault.getAbstractFileByPath(filepath);
     const content = await this.app.vault.read(file);
@@ -9341,7 +9244,7 @@ var FileOperation = class {
     for (let i = 0; i < fileLines.length; i++) {
       const line = fileLines[i];
       if (line.includes(searchTerm)) {
-        const regexResult = /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class=\"todoist-bridge\">\s*))?\[todoist_id::\s*(\w+)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/.exec(line);
+        const regexResult = /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class="todoist-bridge">\s*))?\[todoist_id::\s*(\w+)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/.exec(line);
         if (regexResult) {
           todoistId = regexResult[1];
         }
@@ -9389,63 +9292,81 @@ var TodoistSync = class {
     this.app = app;
     this.plugin = plugin;
   }
-  async deletedTaskCheck(file_path) {
-    if (this.plugin.settings.todoistCreationOnlyMode) {
-      if (this.plugin.settings.debugMode) {
-        console.log("Creation-only mode active; skipping deletedTaskCheck.");
+  async deletedTaskCheck(file_path, context = {}) {
+    let file = context && context.file ? context.file : null;
+    let filepath = file_path;
+    let fileContent = context && typeof context.content === "string" ? context.content : null;
+    try {
+      if (file_path) {
+        if (!file) {
+          const abstract = this.app.vault.getAbstractFileByPath(file_path);
+          if (!abstract || !(abstract instanceof import_obsidian2.TFile)) {
+            return false;
+          }
+          file = abstract;
+        }
+        filepath = file.path;
+        if (fileContent === null) {
+          fileContent = await this.app.vault.read(file);
+        }
+      } else {
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian2.MarkdownView);
+        const activeFile = this.app.workspace.getActiveFile();
+        if (!activeFile || !(activeFile instanceof import_obsidian2.TFile)) {
+          return false;
+        }
+        file = activeFile;
+        filepath = file.path;
+        if (fileContent === null) {
+          if (typeof (view == null ? void 0 : view.data) === "string") {
+            fileContent = view.data;
+          } else {
+            fileContent = await this.app.vault.read(file);
+          }
+        }
       }
-      return;
+    } catch (error) {
+      console.error("Error reading file during deletedTaskCheck:", error);
+      return false;
     }
-    let file;
-    let currentFileValue;
-    let view;
-    let filepath;
-    if (file_path) {
-      file = this.app.vault.getAbstractFileByPath(file_path);
-      filepath = file_path;
-      currentFileValue = await this.app.vault.read(file);
-    } else {
-      view = this.app.workspace.getActiveViewOfType(import_obsidian2.MarkdownView);
-      file = this.app.workspace.getActiveFile();
-      filepath = file == null ? void 0 : file.path;
-      currentFileValue = view == null ? void 0 : view.data;
+    if (context && typeof context === "object" && file) {
+      context.file = file;
     }
-    // Skip files that contain Obsidian comment markers to avoid interfering
-    if (typeof currentFileValue === "string" && currentFileValue.includes("%%")) {
-      return;
+    if (!filepath || typeof fileContent !== "string") {
+      return false;
+    }
+    if (fileContent.includes("%%")) {
+      return false;
     }
     const frontMatter = await this.plugin.cacheOperation.getFileMetadata(filepath);
-    if (!frontMatter || !frontMatter.todoistTasks) {
-      console.log("frontmatter\u6CA1\u6709task");
-      return;
+    if (!frontMatter || !Array.isArray(frontMatter.todoistTasks) || !frontMatter.todoistTasks.length) {
+      return false;
     }
-    const currentFileValueWithOutFrontMatter = currentFileValue.replace(/^---[\s\S]*?---\n/, "");
-    const frontMatter_todoistTasks = frontMatter.todoistTasks;
-    const frontMatter_todoistCount = frontMatter.todoistCount;
-    const deleteTasksPromises = frontMatter_todoistTasks.filter((taskId) => !currentFileValueWithOutFrontMatter.includes(taskId)).map(async (taskId) => {
-      try {
-        const api = this.plugin.todoistRestAPI.initializeAPI();
-        const response = await api.deleteTask(taskId);
-        if (response) {
-          // notification suppressed
-          return taskId;
-        }
-      } catch (error) {
-        console.error(`Failed to delete task ${taskId}: ${error}`);
+    const contentWithoutFrontMatter = fileContent.replace(/^---[\s\S]*?---\n/, "");
+    const missingTaskIds = frontMatter.todoistTasks.map(String).filter((taskId) => !contentWithoutFrontMatter.includes(taskId));
+    if (!missingTaskIds.length) {
+      if (context && typeof context === "object" && typeof fileContent === "string") {
+        context.content = fileContent;
       }
-    });
-    const deletedTaskIds = await Promise.all(deleteTasksPromises);
-    const deletedTaskAmount = deletedTaskIds.length;
-    if (!deletedTaskIds.length) {
-      return;
+      return false;
     }
-    this.plugin.cacheOperation.deleteTaskFromCacheByIDs(deletedTaskIds);
-    this.plugin.saveSettings();
-    const newFrontMatter_todoistTasks = frontMatter_todoistTasks.filter(
-      (taskId) => !deletedTaskIds.includes(taskId)
-    );
-    const newFileMetadata = { todoistTasks: newFrontMatter_todoistTasks, todoistCount: frontMatter_todoistCount - deletedTaskAmount };
-    await this.plugin.cacheOperation.updateFileMetadata(filepath, newFileMetadata);
+    for (const taskId of missingTaskIds) {
+      try {
+        this.plugin.cacheOperation.removeTaskFromMetadata(filepath, taskId);
+      } catch (error) {
+        console.error("Error updating metadata while pruning deleted tasks:", error);
+      }
+      try {
+        this.plugin.cacheOperation.deleteTaskFromCache(taskId);
+      } catch (error) {
+        console.error("Error removing task from cache while pruning deleted tasks:", error);
+      }
+    }
+    await this.plugin.saveSettings();
+    if (context && typeof context === "object" && typeof fileContent === "string") {
+      context.content = fileContent;
+    }
+    return true;
   }
   async lineContentNewTaskCheck(editor, view) {
     var _a, _b, _c, _d;
@@ -9465,7 +9386,11 @@ var TodoistSync = class {
       try {
         const newTask = await this.plugin.todoistRestAPI.AddTask(currentTask);
         const { id: todoist_id, projectId: todoist_projectId, url: todoist_url } = newTask;
-        newTask.path = filepath;        this.plugin.cacheOperation.appendTaskToCache(newTask);
+        newTask.path = filepath;
+        newTask.addedAt = new Date().toISOString();
+        newTask.origin = "obsidian";
+        newTask.isCompleted = false;
+        this.plugin.cacheOperation.appendTaskToCache(newTask);
         if (currentTask.isCompleted === true) {
           await this.plugin.todoistRestAPI.CloseTask(newTask.id);
           this.plugin.cacheOperation.closeTaskToCacheByID(todoist_id);
@@ -9497,28 +9422,51 @@ var TodoistSync = class {
       }
     }
   }
-  async fullTextNewTaskCheck(file_path) {
+  async fullTextNewTaskCheck(file_path, context = {}) {
     var _a;
-    let file;
-    let currentFileValue;
+    let file = context && context.file ? context.file : void 0;
+    let currentFileValue = context && typeof context.content === "string" ? context.content : null;
     let view;
-    let filepath;
-    if (file_path) {
-      file = this.app.vault.getAbstractFileByPath(file_path);
-      filepath = file_path;
-      currentFileValue = await this.app.vault.read(file);
-    } else {
-      view = this.app.workspace.getActiveViewOfType(import_obsidian2.MarkdownView);
-      file = this.app.workspace.getActiveFile();
-      filepath = file == null ? void 0 : file.path;
-      currentFileValue = view == null ? void 0 : view.data;
+    let filepath = file_path;
+    try {
+      if (file_path) {
+        if (!file) {
+          const abstract = this.app.vault.getAbstractFileByPath(file_path);
+          if (!abstract || !(abstract instanceof import_obsidian2.TFile)) {
+            return false;
+          }
+          file = abstract;
+        }
+        filepath = file.path;
+        if (currentFileValue === null) {
+          currentFileValue = await this.app.vault.read(file);
+        }
+      } else {
+        view = this.app.workspace.getActiveViewOfType(import_obsidian2.MarkdownView);
+        const activeFile = this.app.workspace.getActiveFile();
+        if (!activeFile || !(activeFile instanceof import_obsidian2.TFile)) {
+          return false;
+        }
+        file = activeFile;
+        filepath = file.path;
+        if (typeof (view == null ? void 0 : view.data) === "string") {
+          currentFileValue = view.data;
+        } else if (currentFileValue === null) {
+          currentFileValue = await this.app.vault.read(file);
+        }
+      }
+    } catch (error) {
+      console.error("Error reading file during fullTextNewTaskCheck:", error);
+      return false;
     }
-    // Avoid acting on files that contain Obsidian comment markers (%%)
-    if (typeof currentFileValue === "string" && currentFileValue.includes("%%")) {
-      return;
+    if (context && typeof context === "object" && file) {
+      context.file = file;
     }
-    if (this.plugin.settings.enableFullVaultSync) {
-      await this.plugin.fileOperation.addTodoistTagToFile(filepath);
+    if (!filepath || typeof currentFileValue !== "string") {
+      return false;
+    }
+    if (currentFileValue.includes("%%")) {
+      return false;
     }
     const content = currentFileValue;
     let newFrontMatter;
@@ -9534,23 +9482,23 @@ var TodoistSync = class {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (!this.plugin.taskParser.hasTodoistId(line) && this.plugin.taskParser.hasTodoistTag(line)) {
-        console.log(filepath);
         const currentTask = await this.plugin.taskParser.convertTextToTodoistTaskObject(line, filepath, i, content);
         if (typeof currentTask === "undefined") {
           continue;
         }
-        console.log(currentTask);
         try {
           const newTask = await this.plugin.todoistRestAPI.AddTask(currentTask);
-          const { id: todoist_id, projectId: todoist_projectId, url: todoist_url } = newTask;
+          const { id: todoist_id } = newTask;
           newTask.path = filepath;
-          console.log(newTask);          this.plugin.cacheOperation.appendTaskToCache(newTask);
+          newTask.addedAt = new Date().toISOString();
+          newTask.origin = "obsidian";
+          newTask.isCompleted = false;
+          this.plugin.cacheOperation.appendTaskToCache(newTask);
           if (currentTask.isCompleted === true) {
             await this.plugin.todoistRestAPI.CloseTask(newTask.id);
             this.plugin.cacheOperation.closeTaskToCacheByID(todoist_id);
           }
           this.plugin.saveSettings();
-          // Clean the line in Obsidian: remove @todoist and @task; keep hashtags for plugin logic; wrap todoist_id in a metadata span
           const cleaned2 = line.replace(/(^|\s)@todoist\b/gi, " ").replace(/(^|\s)@task\b/gi, " ");
           const text_with_out_link = `${cleaned2} <span class="todoist-bridge">[todoist_id:: ${todoist_id}] </span>`;
           const link = `[link](${newTask.url})`;
@@ -9568,190 +9516,209 @@ var TodoistSync = class {
     if (hasNewTask) {
       try {
         const newContent = lines.join("\n");
-        await this.app.vault.modify(file, newContent);
+        const targetFile = file ?? this.app.vault.getAbstractFileByPath(filepath);
+        if (targetFile && targetFile instanceof import_obsidian2.TFile) {
+          await this.app.vault.modify(targetFile, newContent);
+        }
+        if (context && typeof context === "object") {
+          context.content = newContent;
+          context.file = targetFile ?? file;
+        }
         await this.plugin.cacheOperation.updateFileMetadata(filepath, newFrontMatter);
       } catch (error) {
-        console.error(error);
+        console.error("Error finalising new task sync:", error);
+      }
+      return true;
+    }
+    if (context && typeof context === "object" && typeof currentFileValue === "string") {
+      context.content = currentFileValue;
+      if (!context.file && file) {
+        context.file = file;
       }
     }
+    return false;
   }
   async lineModifiedTaskCheck(filepath, lineText, lineNumber, fileContent) {
-    if (this.plugin.settings.todoistCreationOnlyMode) {
-      if (this.plugin.settings.debugMode) {
-        console.log("Creation-only mode active; skipping lineModifiedTaskCheck.");
-      }
-      return;
-    }
-    if (this.plugin.settings.enableFullVaultSync) {
-      const metadata = await this.plugin.cacheOperation.getFileMetadata(filepath);
-      if (!metadata) {
-        await this.plugin.cacheOperation.newEmptyFileMetadata(filepath);
-      }
-      this.plugin.saveSettings();
-    }
     if (this.plugin.taskParser.hasTodoistId(lineText) && this.plugin.taskParser.hasTodoistTag(lineText)) {
       const lineTask = await this.plugin.taskParser.convertTextToTodoistTaskObject(lineText, filepath, lineNumber, fileContent);
       const lineTask_todoist_id = lineTask.todoist_id.toString();
       const savedTask = await this.plugin.cacheOperation.loadTaskFromCacheyID(lineTask_todoist_id);
       if (!savedTask) {
-        console.log(`\u672C\u5730\u7F13\u5B58\u4E2D\u6CA1\u6709task ${lineTask.todoist_id}`);
-        const url = this.plugin.taskParser.getObsidianUrlFromFilepath(filepath);
-        console.log(url);
+        if (this.plugin.settings.debugMode) {
+          console.log(`Task ${lineTask.todoist_id} not found in local cache`);
+          const url = this.plugin.taskParser.getObsidianUrlFromFilepath(filepath);
+          console.log(url);
+        }
         return;
       }
       const lineTaskContent = lineTask.content;
       const contentModified = !this.plugin.taskParser.taskContentCompare(lineTask, savedTask);
-      const tagsModified = !this.plugin.taskParser.taskTagCompare(lineTask, savedTask);
-      const projectModified = !await this.plugin.taskParser.taskProjectCompare(lineTask, savedTask);
       const statusModified = !this.plugin.taskParser.taskStatusCompare(lineTask, savedTask);
-      const dueDateModified = !await this.plugin.taskParser.compareTaskDueDate(lineTask, savedTask);
-      const parentIdModified = !(lineTask.parentId === savedTask.parentId);
-      const priorityModified = !(lineTask.priority === savedTask.priority);
       try {
         let contentChanged = false;
-        let tagsChanged = false;
-        let projectChanged = false;
         let statusChanged = false;
-        let dueDateChanged = false;
-        let parentIdChanged = false;
-        let priorityChanged = false;
-        let updatedContent = {};
         if (contentModified) {
           console.log(`Content modified for task ${lineTask_todoist_id}`);
-          updatedContent.content = lineTaskContent;
-          contentChanged = true;
-        }
-        if (tagsModified) {
-          console.log(`Tags modified for task ${lineTask_todoist_id}`);
-          updatedContent.labels = lineTask.labels;
-          tagsChanged = true;
-        }
-        if (dueDateModified) {
-          console.log(`Due date modified for task ${lineTask_todoist_id}`);
-          console.log(lineTask.dueDate);
-          if (lineTask.dueDate === "") {
-            updatedContent.dueString = "no date";
-          } else {
-            updatedContent.dueDate = lineTask.dueDate;
+          const updatedContent = { content: lineTaskContent };
+          try {
+            await this.plugin.todoistRestAPI.UpdateTask(lineTask.todoist_id.toString(), updatedContent);
+            this.plugin.cacheOperation.setTaskContentInCache(lineTask_todoist_id, lineTaskContent);
+            contentChanged = true;
+          } catch (error) {
+            console.error("Error updating Todoist task content:", error);
           }
-          dueDateChanged = true;
-        }
-        if (projectModified) {
-        }
-        if (parentIdModified) {
-        }
-        if (priorityModified) {
-          updatedContent.priority = lineTask.priority;
-          priorityChanged = true;
-        }
-        if (contentChanged || tagsChanged || dueDateChanged || projectChanged || parentIdChanged || priorityChanged) {
-          const updatedTask = await this.plugin.todoistRestAPI.UpdateTask(lineTask.todoist_id.toString(), updatedContent);
-          updatedTask.path = filepath;
-          this.plugin.cacheOperation.updateTaskToCacheByID(updatedTask);
         }
         if (statusModified) {
           console.log(`Status modified for task ${lineTask_todoist_id}`);
           if (lineTask.isCompleted === true) {
-            console.log(`task completed`);
-            this.plugin.todoistRestAPI.CloseTask(lineTask.todoist_id.toString());
-            this.plugin.cacheOperation.closeTaskToCacheByID(lineTask.todoist_id.toString());
+            const timestamp = this.plugin.normalizeCompletionTimestamp(new Date());
+            const descriptionBase = (savedTask == null ? void 0 : savedTask.description) || this.plugin.taskParser.getObsidianUrlFromFilepath(filepath) || "";
+            const completionSuffixPattern = /\s*-\s*Completed(?:\s+in\s+Obsidian\s+on\s+[0-9TZ:.+-]+|\s+\d{4}-\d{2}-\d{2})$/i;
+            const cleanedDescription = descriptionBase.replace(completionSuffixPattern, "").trim();
+            const completionNote = cleanedDescription ? `${cleanedDescription} - Completed in Obsidian on ${timestamp.iso}` : `Completed in Obsidian on ${timestamp.iso}`;
+            try {
+              await this.plugin.todoistRestAPI.UpdateTask(lineTask.todoist_id.toString(), { description: completionNote });
+            } catch (error) {
+              console.error("Error updating Todoist description for completion:", error);
+            }
+            await this.plugin.todoistRestAPI.CloseTask(lineTask.todoist_id.toString());
+            const commentDisplay = timestamp.iso.replace('T', ' ').replace('Z', ' UTC');
+            try {
+              await this.plugin.todoistRestAPI.AddComment(lineTask.todoist_id.toString(), { content: `Task completed in Obsidian on ${commentDisplay}` });
+            } catch (error) {
+              console.error("Error adding Todoist completion comment:", error);
+            }
+            await this.plugin.handleTaskCompletion(lineTask.todoist_id.toString(), { source: "obsidian", completedAt: timestamp.iso });
           } else {
-            console.log(`task umcompleted`);
-            this.plugin.todoistRestAPI.OpenTask(lineTask.todoist_id.toString());
-            this.plugin.cacheOperation.reopenTaskToCacheByID(lineTask.todoist_id.toString());
+            await this.plugin.todoistRestAPI.OpenTask(lineTask.todoist_id.toString());
+            const completionSuffixPattern = /\s*-\s*Completed(?:\s+in\s+Obsidian\s+on\s+[0-9TZ:.+-]+|\s+\d{4}-\d{2}-\d{2})$/i;
+            const reopenBase = ((savedTask == null ? void 0 : savedTask.description) || this.plugin.taskParser.getObsidianUrlFromFilepath(filepath) || "").replace(completionSuffixPattern, "").trim();
+            if (reopenBase) {
+              try {
+                await this.plugin.todoistRestAPI.UpdateTask(lineTask.todoist_id.toString(), { description: reopenBase });
+              } catch (error) {
+                console.error("Error restoring Todoist description on reopen:", error);
+              }
+            }
+            const reopenedTask = await this.plugin.cacheOperation.reopenTaskToCacheByID(lineTask.todoist_id.toString());
+            await this.plugin.fileOperation.uncompleteTaskInTheFile(lineTask.todoist_id.toString());
+            const targetPath = (reopenedTask == null ? void 0 : reopenedTask.path) || filepath;
+            if (targetPath) {
+              this.plugin.cacheOperation.addTaskToMetadata(targetPath, lineTask.todoist_id.toString());
+            }
+            this.plugin.saveSettings();
           }
           statusChanged = true;
         }
-        if (contentChanged || statusChanged || dueDateChanged || tagsChanged || projectChanged || priorityChanged) {
-          console.log(lineTask);
-          console.log(savedTask);
+        if (contentChanged && !statusChanged) {
           this.plugin.saveSettings();
-          let message = `Task ${lineTask_todoist_id} is updated.`;
-          if (contentChanged) {
-            message += " Content was changed.";
-          }
-          if (statusChanged) {
-            message += " Status was changed.";
-          }
-          if (dueDateChanged) {
-            message += " Due date was changed.";
-          }
-          if (tagsChanged) {
-            message += " Tags were changed.";
-          }
-          if (projectChanged) {
-            message += " Project was changed.";
-          }
-          if (priorityChanged) {
-            message += " Priority was changed.";
-          }
-          // notification suppressed
-        } else {
         }
       } catch (error) {
         console.error("Error updating task:", error);
       }
     }
   }
-  async fullTextModifiedTaskCheck(file_path) {
-    if (this.plugin.settings.todoistCreationOnlyMode) {
-      if (this.plugin.settings.debugMode) {
-        console.log("Creation-only mode active; skipping fullTextModifiedTaskCheck.");
-      }
-      return;
-    }
-    let file;
-    let currentFileValue;
+  async fullTextModifiedTaskCheck(file_path, context = {}) {
+    let file = context && context.file ? context.file : null;
+    let currentFileValue = context && typeof context.content === "string" ? context.content : null;
     let view;
     let filepath;
     try {
       if (file_path) {
-        file = this.app.vault.getAbstractFileByPath(file_path);
+        if (!file) {
+          file = this.app.vault.getAbstractFileByPath(file_path);
+        }
+        if (!file || !(file instanceof import_obsidian2.TFile)) {
+          return false;
+        }
         filepath = file_path;
-        currentFileValue = await this.app.vault.read(file);
+        if (currentFileValue === null) {
+          currentFileValue = await this.app.vault.read(file);
+        }
       } else {
         view = this.app.workspace.getActiveViewOfType(import_obsidian2.MarkdownView);
         file = this.app.workspace.getActiveFile();
-        filepath = file == null ? void 0 : file.path;
-        currentFileValue = view == null ? void 0 : view.data;
-      }
-      // Avoid acting on files that contain Obsidian comment markers (%%)
-      if (typeof currentFileValue === "string" && currentFileValue.includes("%%")) {
-        return;
-      }
-      const content = currentFileValue;
-      let hasModifiedTask = false;
-      const lines = content.split("\n");
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (this.plugin.taskParser.hasTodoistId(line) && this.plugin.taskParser.hasTodoistTag(line)) {
-          try {
-            await this.lineModifiedTaskCheck(filepath, line, i, content);
-            hasModifiedTask = true;
-          } catch (error) {
-            console.error("Error modifying task:", error);
-            continue;
+        if (!file || !(file instanceof import_obsidian2.TFile)) {
+          return false;
+        }
+        filepath = file.path;
+        if (currentFileValue === null) {
+          if (typeof (view == null ? void 0 : view.data) === "string") {
+            currentFileValue = view.data;
+          } else {
+            currentFileValue = await this.app.vault.read(file);
           }
         }
       }
-      if (hasModifiedTask) {
+      if (typeof currentFileValue === "string" && currentFileValue.includes("%%")) {
+        return false;
+      }
+      const content = currentFileValue;
+      if (typeof content !== "string") {
+        return false;
+      }
+      if (!filepath) {
+        return false;
+      }
+      const trackedIds = this.plugin.cacheOperation.getActiveTaskIdsByFilepath(filepath);
+      if (!trackedIds || trackedIds.size === 0) {
+        return false;
+      }
+      let hasModifiedTask = false;
+      const seenInFile = new Set();
+      const lines = content.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!this.plugin.taskParser.hasTodoistTag(line)) {
+          continue;
+        }
+        if (!this.plugin.taskParser.hasTodoistId(line)) {
+          continue;
+        }
+        const todoistId = this.plugin.taskParser.getTodoistIdFromLineText(line);
+        if (!todoistId) {
+          continue;
+        }
+        const normalizedId = todoistId.toString();
+        if (!trackedIds.has(normalizedId)) {
+          continue;
+        }
+        seenInFile.add(normalizedId);
         try {
+          await this.lineModifiedTaskCheck(filepath, line, i, content);
+          hasModifiedTask = true;
         } catch (error) {
-          console.error("Error processing modified content:", error);
+          console.error("Error modifying task:", error);
+          continue;
         }
       }
+      if (this.plugin.settings.debugMode) {
+        const missing = Array.from(trackedIds).filter((id) => !seenInFile.has(id));
+        if (missing.length) {
+          console.log(`Skipped ${missing.length} tracked task(s) in ${filepath} because markers were not found in the note.`);
+        }
+      }
+      if (hasModifiedTask && context && typeof context === "object" && file instanceof import_obsidian2.TFile) {
+        try {
+          context.content = await this.app.vault.read(file);
+          context.file = file;
+        } catch (error) {
+          console.error("Error refreshing file content after modifications:", error);
+        }
+      } else if (context && typeof context === "object" && typeof currentFileValue === "string") {
+        context.content = currentFileValue;
+        if (!context.file && file) {
+          context.file = file;
+        }
+      }
+      return hasModifiedTask;
     } catch (error) {
       console.error("Error:", error);
+      return false;
     }
   }
   // Close a task by calling API and updating JSON file
   async closeTask(taskId) {
-    if (this.plugin.settings.todoistCreationOnlyMode) {
-      if (this.plugin.settings.debugMode) {
-        console.log("Creation-only mode active; skipping closeTask.");
-      }
-      return;
-    }
     try {
       await this.plugin.todoistRestAPI.CloseTask(taskId);
       await this.plugin.fileOperation.completeTaskInTheFile(taskId, new Date().toISOString());
@@ -9765,12 +9732,6 @@ var TodoistSync = class {
   }
   //open task
   async repoenTask(taskId) {
-    if (this.plugin.settings.todoistCreationOnlyMode) {
-      if (this.plugin.settings.debugMode) {
-        console.log("Creation-only mode active; skipping repoenTask.");
-      }
-      return;
-    }
     try {
       await this.plugin.todoistRestAPI.OpenTask(taskId);
       await this.plugin.fileOperation.uncompleteTaskInTheFile(taskId);
@@ -9781,9 +9742,9 @@ var TodoistSync = class {
     }
   }
   /**
-   * 从任务列表中删除指定 ID 的任务并更新 JSON 文件
-   * @param taskIds 要删除的任务 ID 数组
-   * @returns 返回被成功删除的任务 ID 数组
+   * Remove the tasks with the specified IDs from the list and update the JSON file
+   * @param taskIds Array of task IDs to delete
+   * @returns Array of task IDs that were deleted successfully
    */
   async deleteTasksByIds(taskIds) {
     const deletedTaskIds = [];
@@ -9808,41 +9769,57 @@ var TodoistSync = class {
     this.plugin.saveSettings();
     return deletedTaskIds;
   }
-  // 同步已完成的任务状态到 Obsidian file
+  // Sync the status of completed tasks to the Obsidian file
   async syncCompletedTaskStatusToObsidian(unSynchronizedEvents) {
+    const processedEvents = [];
     try {
-      const processedEvents = [];
       for (const e of unSynchronizedEvents) {
-        await this.plugin.fileOperation.completeTaskInTheFile(e.object_id, e.event_date);
-        await this.plugin.cacheOperation.closeTaskToCacheByID(e.object_id);
-        // notification suppressed
+        const taskId = e.object_id != null ? String(e.object_id) : "";
+        if (!taskId) {
+          continue;
+        }
+        await this.plugin.handleTaskCompletion(taskId, { source: "todoist", completedAt: e.event_date });
         processedEvents.push(e);
       }
-      await this.plugin.cacheOperation.appendEventsToCache(processedEvents);
-      this.plugin.saveSettings();
+      if (processedEvents.length) {
+        await this.plugin.cacheOperation.appendEventsToCache(processedEvents);
+        this.plugin.saveSettings();
+      }
     } catch (error) {
-      console.error("\u540C\u6B65\u4EFB\u52A1\u72B6\u6001\u65F6\u51FA\u9519\uFF1A", error);
+      console.error("Error syncing task status:", error);
     }
+    return processedEvents.length;
   }
-  // 同步已完成的任务状态到 Obsidian file
+  // Sync the status of uncompleted tasks to the Obsidian file
   async syncUncompletedTaskStatusToObsidian(unSynchronizedEvents) {
+    const processedEvents = [];
     try {
-      const processedEvents = [];
       for (const e of unSynchronizedEvents) {
-        await this.plugin.fileOperation.uncompleteTaskInTheFile(e.object_id);
-        await this.plugin.cacheOperation.reopenTaskToCacheByID(e.object_id);
+        const taskId = e.object_id != null ? String(e.object_id) : "";
+        if (!taskId) {
+          continue;
+        }
+        await this.plugin.fileOperation.uncompleteTaskInTheFile(taskId);
+        const reopenedTask = await this.plugin.cacheOperation.reopenTaskToCacheByID(taskId);
+        if (reopenedTask && reopenedTask.path) {
+          this.plugin.cacheOperation.addTaskToMetadata(reopenedTask.path, taskId);
+        }
         processedEvents.push(e);
       }
-      await this.plugin.cacheOperation.appendEventsToCache(processedEvents);
-      this.plugin.saveSettings();
+      if (processedEvents.length) {
+        await this.plugin.cacheOperation.appendEventsToCache(processedEvents);
+        this.plugin.saveSettings();
+      }
     } catch (error) {
-      console.error("\u540C\u6B65\u4EFB\u52A1\u72B6\u6001\u65F6\u51FA\u9519\uFF1A", error);
+      console.error("Error syncing task status:", error);
     }
+    return processedEvents.length;
   }
   async syncDeletedTasksToObsidian(unSynchronizedEvents) {
+    let deletionCount = 0;
     try {
       if (!unSynchronizedEvents || !unSynchronizedEvents.length) {
-        return;
+        return deletionCount;
       }
       const processedEvents = [];
       for (const e of unSynchronizedEvents) {
@@ -9852,8 +9829,9 @@ var TodoistSync = class {
           continue;
         }
         let filepath = null;
+        let cachedTask = null;
         try {
-          const cachedTask = await this.plugin.cacheOperation.loadTaskFromCacheyID(taskId);
+          cachedTask = await this.plugin.cacheOperation.loadTaskFromCacheyID(taskId);
           filepath = (cachedTask == null ? void 0 : cachedTask.path) || null;
         } catch (error) {
           console.error("Error loading deleted Todoist task from cache:", error);
@@ -9873,107 +9851,171 @@ var TodoistSync = class {
             console.error("Error searching metadata for deleted task:", error);
           }
         }
-        let markersRemoved = false;
-        if (this.plugin.settings.removeMarkersOnTodoistDelete) {
-          if (filepath) {
-            try {
-              markersRemoved = await this.plugin.fileOperation.removeTodoistMarkersForTask(filepath, taskId);
-            } catch (error) {
-              console.error("Error removing Todoist markers for deleted task:", error);
-            }
-          }
-          if (!markersRemoved) {
-            try {
-              const fallbackPath = await this.plugin.fileOperation.removeTodoistMarkersForTaskAnywhere(taskId);
-              if (fallbackPath) {
-                filepath = fallbackPath;
-                markersRemoved = true;
-              }
-            } catch (error) {
-              console.error("Error scanning vault for deleted Todoist task markers:", error);
-            }
-          }
-        }
-        const updateMetadataForPath = async (targetPath) => {
+        const trimTaskFromMetadata = async (targetPath) => {
           if (!targetPath) {
             return false;
           }
           try {
             const metadata = await this.plugin.cacheOperation.getFileMetadata(targetPath);
-            if (!metadata) {
+            if (!metadata || !Array.isArray(metadata.todoistTasks)) {
               return false;
             }
-            const updatedMetadata = { ...metadata };
-            const previousTasks = Array.isArray(updatedMetadata.todoistTasks) ? updatedMetadata.todoistTasks.map(String) : [];
-            const filteredTasks = previousTasks.filter((id) => id !== taskId);
-            const removed = filteredTasks.length !== previousTasks.length;
-            updatedMetadata.todoistTasks = filteredTasks;
-            if (typeof updatedMetadata.todoistCount === "number") {
-              updatedMetadata.todoistCount = removed ? Math.max(0, updatedMetadata.todoistCount - 1) : updatedMetadata.todoistCount;
-            } else {
-              updatedMetadata.todoistCount = filteredTasks.length;
+            const includesId = metadata.todoistTasks.map(String).includes(taskId);
+            if (includesId) {
+              this.plugin.cacheOperation.removeTaskFromMetadata(targetPath, taskId);
             }
-            await this.plugin.cacheOperation.updateFileMetadata(targetPath, updatedMetadata);
-            return removed;
+            return includesId;
           } catch (error) {
             console.error("Error updating metadata for deleted task:", error);
             return false;
           }
         };
-        let metadataHandled = await updateMetadataForPath(filepath);
+        let metadataHandled = filepath ? await trimTaskFromMetadata(filepath) : false;
         if (!metadataHandled) {
           try {
             const metadatas = metadataSnapshot || await this.plugin.cacheOperation.getFileMetadatas();
             for (const key in metadatas) {
               const value = metadatas[key];
               if (value && Array.isArray(value.todoistTasks) && value.todoistTasks.map(String).includes(taskId)) {
-                await updateMetadataForPath(key);
-                break;
+                metadataHandled = await trimTaskFromMetadata(key);
+                if (metadataHandled) {
+                  if (!filepath) {
+                    filepath = key;
+                  }
+                  break;
+                }
               }
             }
           } catch (error) {
             console.error("Error sweeping metadata for deleted task:", error);
           }
         }
+        let markersRemoved = false;
+        if (filepath) {
+          try {
+            const removed = await this.plugin.fileOperation.removeTodoistMarkersForTask(filepath, taskId);
+            if (removed) {
+              markersRemoved = true;
+            }
+          } catch (error) {
+            console.error("Error removing Todoist markers for deleted task:", error);
+          }
+        }
+        if (!markersRemoved) {
+          try {
+            const fallbackPath = await this.plugin.fileOperation.removeTodoistMarkersForTaskAnywhere(taskId);
+            if (fallbackPath) {
+              markersRemoved = true;
+              if (!filepath) {
+                filepath = fallbackPath;
+              }
+              if (!metadataHandled) {
+                metadataHandled = await trimTaskFromMetadata(fallbackPath) || metadataHandled;
+              }
+            }
+          } catch (error) {
+            console.error("Error sweeping vault for deleted Todoist markers:", error);
+          }
+        }
         try {
-          await this.plugin.cacheOperation.deleteTaskFromCacheByIDs([taskId]);
+          this.plugin.cacheOperation.deleteTaskFromCache(taskId);
         } catch (error) {
           console.error("Error deleting Todoist task from cache:", error);
         }
+        if (markersRemoved || metadataHandled || cachedTask) {
+          deletionCount++;
+        }
+        try {
+          const timestamp = this.plugin.normalizeCompletionTimestamp();
+          const taskForLog = cachedTask ? { ...cachedTask } : { id: taskId };
+          if (!taskForLog.path) {
+            taskForLog.path = filepath ?? "";
+          }
+          if (!("content" in taskForLog) || taskForLog.content == null) {
+            taskForLog.content = "";
+          }
+          if (!("url" in taskForLog)) {
+            taskForLog.url = null;
+          }
+          if (!("addedAt" in taskForLog)) {
+            taskForLog.addedAt = null;
+          }
+          if (!("createdAt" in taskForLog)) {
+            taskForLog.createdAt = null;
+          }
+          await this.plugin.logTaskActivity(taskForLog, { dateClosedIso: timestamp.iso, status: "deleted", statusSource: "todoist", source: "todoist" });
+        } catch (error) {
+          console.error("Error logging deleted Todoist task:", error);
+        }
         processedEvents.push(e);
       }
-      await this.plugin.cacheOperation.appendEventsToCache(processedEvents);
-      this.plugin.saveSettings();
+      if (processedEvents.length) {
+        await this.plugin.cacheOperation.appendEventsToCache(processedEvents);
+        this.plugin.saveSettings();
+      }
     } catch (error) {
       console.error("Error syncing deleted Todoist tasks:", error);
     }
+    return deletionCount;
   }
-  // 同步updated item状态到 Obsidian 中
+  // Sync the status of updated items to Obsidian
   async syncUpdatedTaskToObsidian(unSynchronizedEvents) {
+    let labelRemovals = 0;
+    const processedEvents = [];
     try {
-      const processedEvents = [];
       for (const e of unSynchronizedEvents) {
-        console.log(e);
-        console.log(typeof e.extra_data.last_due_date === "undefined");
-        if (!(typeof e.extra_data.last_due_date === "undefined")) {
-          await this.syncUpdatedTaskDueDateToObsidian(e);
+        const taskId = e.object_id != null ? String(e.object_id) : "";
+        if (!taskId) {
+          continue;
         }
-        if (!(typeof e.extra_data.last_content === "undefined")) {
+        const extra = e.extra_data || {};
+        const labelCandidates = ["labels_removed", "removed_labels", "labels_lost", "labels_removed_names"];
+        let triggeredRemoval = false;
+        for (const key of labelCandidates) {
+          const value = extra[key];
+          if (Array.isArray(value) && value.some((label) => this.plugin.isTrackedTodoistLabel(label))) {
+            triggeredRemoval = true;
+            break;
+          }
+        }
+        let remoteTask = null;
+        if (!triggeredRemoval) {
+          try {
+            remoteTask = await this.plugin.todoistRestAPI.getTaskById(taskId);
+            const hasTrackedLabel = Array.isArray(remoteTask == null ? void 0 : remoteTask.labels) && remoteTask.labels.some((label) => this.plugin.isTrackedTodoistLabel(label));
+            if (!hasTrackedLabel) {
+              triggeredRemoval = true;
+            }
+          } catch (error) {
+            console.error("Error loading Todoist task while evaluating label removal:", error);
+          }
+        }
+        if (triggeredRemoval) {
+          const handled = await this.plugin.handleTodoistTagRemoval(taskId, remoteTask);
+          if (handled) {
+            labelRemovals++;
+          }
+          processedEvents.push(e);
+          continue;
+        }
+        if (!(typeof extra.last_content === "undefined")) {
           await this.syncUpdatedTaskContentToObsidian(e);
         }
         processedEvents.push(e);
       }
-      await this.plugin.cacheOperation.appendEventsToCache(processedEvents);
-      this.plugin.saveSettings();
+      if (processedEvents.length) {
+        await this.plugin.cacheOperation.appendEventsToCache(processedEvents);
+        this.plugin.saveSettings();
+      }
     } catch (error) {
       console.error("Error syncing updated item", error);
     }
+    return { processed: processedEvents.length, labelRemovals };
   }
   async syncUpdatedTaskContentToObsidian(e) {
     this.plugin.fileOperation.syncUpdatedTaskContentToTheFile(e);
     const content = e.extra_data.content;
-    this.plugin.cacheOperation.modifyTaskToCacheByID(e.object_id, { content });
-    // notification suppressed
+    this.plugin.cacheOperation.setTaskContentInCache(e.object_id, content);
   }
   async syncUpdatedTaskDueDateToObsidian(e) {
     this.plugin.fileOperation.syncUpdatedTaskDueDateToTheFile(e);
@@ -9997,7 +10039,8 @@ var TodoistSync = class {
       console.error("\u540C\u6B65\u4EFB\u52A1\u72B6\u6001\u65F6\u51FA\u9519\uFF1A", error);
     }
   }
-  async syncTodoistToObsidian() {
+  async syncTodoistToObsidian(options = {}) {
+    const summary = { completed: 0, deleted: 0, cached: 0 };
     try {
       const all_activity_events = await this.plugin.todoistSyncAPI.getNonObsidianAllActivityEvents();
       const savedEvents = await this.plugin.cacheOperation.loadEventsFromCache();
@@ -10017,25 +10060,35 @@ var TodoistSync = class {
       const unsynchronized_item_updated_events = this.plugin.todoistSyncAPI.filterActivityEvents(result2, { event_type: "updated", object_type: "item" });
       const unsynchronized_notes_added_events = this.plugin.todoistSyncAPI.filterActivityEvents(result3, { event_type: "added", object_type: "note" });
       const unsynchronized_project_events = this.plugin.todoistSyncAPI.filterActivityEvents(result1, { object_type: "project" });
-      console.log(unsynchronized_item_completed_events);
-      console.log(unsynchronized_item_uncompleted_events);
-      console.log(unsynchronized_item_deleted_events);
-      console.log(unsynchronized_item_updated_events);
-      console.log(unsynchronized_project_events);
-      console.log(unsynchronized_notes_added_events);
-      await this.syncCompletedTaskStatusToObsidian(unsynchronized_item_completed_events);
+      if (this.plugin.settings.debugMode) {
+        console.log(unsynchronized_item_completed_events);
+        console.log(unsynchronized_item_uncompleted_events);
+        console.log(unsynchronized_item_deleted_events);
+        console.log(unsynchronized_item_updated_events);
+        console.log(unsynchronized_project_events);
+        console.log(unsynchronized_notes_added_events);
+      }
+      summary.completed += await this.syncCompletedTaskStatusToObsidian(unsynchronized_item_completed_events);
       await this.syncUncompletedTaskStatusToObsidian(unsynchronized_item_uncompleted_events);
-      await this.syncDeletedTasksToObsidian(unsynchronized_item_deleted_events);
-      await this.syncUpdatedTaskToObsidian(unsynchronized_item_updated_events);
+      summary.deleted += await this.syncDeletedTasksToObsidian(unsynchronized_item_deleted_events);
+      const updateSummary = await this.syncUpdatedTaskToObsidian(unsynchronized_item_updated_events);
+      if (updateSummary && typeof updateSummary.labelRemovals === "number") {
+        summary.deleted += updateSummary.labelRemovals;
+      }
       await this.syncAddedTaskNoteToObsidian(unsynchronized_notes_added_events);
       if (unsynchronized_project_events.length) {
-        console.log("New project event");
+        if (this.plugin.settings.debugMode) {
+          console.log("New project event");
+        }
         await this.plugin.cacheOperation.saveProjectsToCache();
         await this.plugin.cacheOperation.appendEventsToCache(unsynchronized_project_events);
       }
     } catch (err) {
       console.error("An error occurred while synchronizing:", err);
     }
+    const cachedTasks = this.plugin.cacheOperation.loadTasksFromCache();
+    summary.cached = Array.isArray(cachedTasks) ? cachedTasks.length : 0;
+    return summary;
   }
   async backupTodoistAllResources() {
     try {
@@ -10051,12 +10104,6 @@ var TodoistSync = class {
   }
   //After renaming the file, check all tasks in the file and update all links.
   async updateTaskDescription(filepath) {
-    if (this.plugin.settings.todoistCreationOnlyMode) {
-      if (this.plugin.settings.debugMode) {
-        console.log("Creation-only mode active; skipping updateTaskDescription.");
-      }
-      return;
-    }
     const metadata = await this.plugin.cacheOperation.getFileMetadata(filepath);
     if (!metadata || !metadata.todoistTasks) {
       return;
@@ -10076,44 +10123,6 @@ var TodoistSync = class {
   }
 };
 // src/modal.ts
-var import_obsidian3 = require("obsidian");
-var SetDefalutProjectInTheFilepathModal = class extends import_obsidian3.Modal {
-  constructor(app, plugin, filepath) {
-    super(app);
-    this.filepath = filepath;
-    this.plugin = plugin;
-    this.open();
-  }
-  async onOpen() {
-    var _a, _b;
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.createEl("h5", { text: "Set default project for todoist tasks in the current file" });
-    this.defaultProjectId = await this.plugin.cacheOperation.getDefaultProjectIdForFilepath(this.filepath);
-    this.defaultProjectName = await this.plugin.cacheOperation.getProjectNameByIdFromCache(this.defaultProjectId);
-    console.log(this.defaultProjectId);
-    console.log(this.defaultProjectName);
-    const myProjectsOptions = (_b = (_a = this.plugin.settings.todoistTasksData) == null ? void 0 : _a.projects) == null ? void 0 : _b.reduce(
-      (obj, item) => {
-        obj[item.id.toString()] = item.name;
-        return obj;
-      },
-      {}
-    );
-    new import_obsidian3.Setting(contentEl).setName("Default project").addDropdown(
-      (component) => component.addOption(this.defaultProjectId, this.defaultProjectName).addOptions(myProjectsOptions).onChange((value) => {
-        console.log(`project id  is ${value}`);
-        this.plugin.cacheOperation.setDefaultProjectIdForFilepath(this.filepath, value);
-        this.plugin.setStatusBarText();
-        this.close();
-      })
-    );
-  }
-  onClose() {
-    let { contentEl } = this;
-    contentEl.empty();
-  }
-};
 // main.ts
 var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
   async onload() {
@@ -10121,6 +10130,7 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
     if (!isSettingsLoaded) {
       return;
     }
+    this.autoSyncIntervalId = void 0;
     this.addSettingTab(new TodoistBridgeSettingTab(this.app, this));
     if (!this.settings.todoistAPIToken) {
     } else {
@@ -10147,9 +10157,6 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
       if (evt.key === "Delete" || evt.key === "Backspace") {
         try {
           if (!this.checkModuleClass()) {
-            return;
-          }
-          if (this.settings.todoistCreationOnlyMode) {
             return;
           }
           if (!await this.checkAndHandleSyncLock())
@@ -10191,9 +10198,6 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
         if (!this.checkModuleClass()) {
           return;
         }
-        if (this.settings.enableFullVaultSync) {
-          return;
-        }
         if (!await this.checkAndHandleSyncLock())
           return;
         await this.todoistSync.lineContentNewTaskCheck(editor, view);
@@ -10219,9 +10223,6 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
       }
       await this.cacheOperation.updateRenamedFilePath(oldpath, file.path);
       this.saveSettings();
-      if (this.settings.todoistCreationOnlyMode) {
-        return;
-      }
       if (!await this.checkAndHandleSyncLock())
         return;
       try {
@@ -10252,20 +10253,9 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
         this.syncLock = false;
       }
     }));
-    this.registerInterval(window.setInterval(async () => await this.scheduledSynchronization(), this.settings.automaticSynchronizationInterval * 1e3));
+    this.updateAutomaticSyncInterval();
     this.app.workspace.on("active-leaf-change", (leaf) => {
       this.setStatusBarText();
-    });
-    this.addCommand({
-      id: "set-default-project-for-todoist-task-in-the-current-file",
-      name: "Set default project for todoist task in the current file",
-      editorCallback: (editor, view) => {
-        if (!view) {
-          return;
-        }
-        const filepath = view.file.path;
-        new SetDefalutProjectInTheFilepathModal(this.app, this, filepath);
-      }
     });
     // Manual sync command to run the full synchronization immediately
     this.addCommand({
@@ -10277,10 +10267,30 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
             
             return;
           }
-          new import_obsidian4.Notice("Todoist Bridge: Sync started");
-          await this.scheduledSynchronization();        } catch (error) {
+          const includeTimestamp = this.settings.debugMode === true;
+          const startTimestamp = includeTimestamp ? this.getTimestampStrings() : null;
+          const startMessage = includeTimestamp ? `Todoist Bridge: Manual sync started (${startTimestamp.display})` : "Todoist Bridge: Manual sync started";
+          new import_obsidian4.Notice(startMessage);
+          const summary = await this.scheduledSynchronization({ interactive: true });
+          if (summary) {
+            const finishMessage = this.formatSyncSummary(summary);
+            new import_obsidian4.Notice(finishMessage);
+          }
+        } catch (error) {
           console.error("Manual sync failed:", error);
           
+        }
+      }
+    });
+    this.addCommand({
+      id: "todoist-bridge-check-database",
+      name: "Check Database (Todoist Bridge)",
+      callback: async () => {
+        try {
+          await this.runDatabaseCheck();
+        } catch (error) {
+          console.error("Todoist Bridge: Database check failed", error);
+          new import_obsidian4.Notice("Todoist Bridge: Database check failed");
         }
       }
     });
@@ -10296,18 +10306,16 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
   }
   async onunload() {
     console.log(`Todoist Bridge id unloaded!`);
+    if (typeof this.autoSyncIntervalId !== "undefined") {
+      window.clearInterval(this.autoSyncIntervalId);
+      this.autoSyncIntervalId = void 0;
+    }
     await this.saveSettings();
   }
   async loadSettings() {
     try {
       const data = await this.loadData();
       this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-      if (typeof this.settings.removeMarkersOnTodoistDelete === "undefined") {
-        this.settings.removeMarkersOnTodoistDelete = true;
-      }
-      if (typeof this.settings.todoistCreationOnlyMode === "undefined") {
-        this.settings.todoistCreationOnlyMode = false;
-      }
       return true;
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -10317,13 +10325,568 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
   async saveSettings() {
     try {
       if (this.settings && Object.keys(this.settings).length > 0) {
-        await this.saveData(this.settings);
+        this.pruneFileMetadataReferences();
+        const persisted = this.prepareSettingsForSave();
+        await this.saveData(persisted);
       } else {
         console.error("Settings are empty or invalid, not saving to avoid data loss.");
       }
     } catch (error) {
       console.error("Error saving settings:", error);
     }
+  }
+  pruneFileMetadataReferences() {
+    try {
+      const metadatas = this.settings?.fileMetadata;
+      if (!metadatas || typeof metadatas !== "object") {
+        return;
+      }
+      const taskList = this.settings?.todoistTasksData?.tasks;
+      const activeIds = new Set(Array.isArray(taskList) ? taskList.map((task) => {
+        if (!task) {
+          return null;
+        }
+        if (typeof task === "string" || typeof task === "number") {
+          return String(task);
+        }
+        if (typeof task === "object" && task.id != null) {
+          return String(task.id);
+        }
+        return null;
+      }).filter((id) => typeof id === "string") : []);
+      let mutated = false;
+      for (const key of Object.keys(metadatas)) {
+        const metadata = metadatas[key];
+        if (!metadata || typeof metadata !== "object") {
+          continue;
+        }
+        const originalTasks = Array.isArray(metadata.todoistTasks) ? metadata.todoistTasks : [];
+        const filteredTasks = originalTasks.filter((id) => activeIds.has(String(id)));
+        if (filteredTasks.length !== originalTasks.length) {
+          metadata.todoistTasks = filteredTasks;
+          mutated = true;
+        } else if (!Array.isArray(metadata.todoistTasks)) {
+          metadata.todoistTasks = filteredTasks;
+        }
+        const count = filteredTasks.length;
+        if (metadata.todoistCount !== count) {
+          metadata.todoistCount = count;
+          mutated = true;
+        }
+        metadatas[key] = metadata;
+      }
+      if (mutated) {
+        this.settings.fileMetadata = metadatas;
+      }
+    } catch (error) {
+      console.error("Error pruning Todoist metadata references:", error);
+    }
+  }
+  updateAutomaticSyncInterval() {
+    if (typeof this.autoSyncIntervalId !== "undefined") {
+      window.clearInterval(this.autoSyncIntervalId);
+      this.autoSyncIntervalId = void 0;
+    }
+    if (!this.settings || !this.settings.automaticSynchronizationEnabled) {
+      return;
+    }
+    const intervalSeconds = Number(this.settings.automaticSynchronizationInterval);
+    if (!Number.isFinite(intervalSeconds) || intervalSeconds < 20) {
+      return;
+    }
+    this.autoSyncIntervalId = this.registerInterval(window.setInterval(async () => await this.scheduledSynchronization(), intervalSeconds * 1e3));
+  }
+  prepareSettingsForSave() {
+    const clone = { ...this.settings };
+    const sanitizedTasks = this.sanitizeTasksForPersistence(this.settings?.todoistTasksData?.tasks ?? []);
+    clone.todoistTasksData = {
+      tasks: sanitizedTasks,
+      projects: [],
+      events: []
+    };
+    return clone;
+  }
+  sanitizeTasksForPersistence(tasks) {
+    if (!Array.isArray(tasks)) {
+      return [];
+    }
+    const seen = new Set();
+    const active = [];
+    for (const task of tasks) {
+      if (!task) {
+        continue;
+      }
+      const id = task.id != null ? String(task.id) : null;
+      if (!id || seen.has(id)) {
+        continue;
+      }
+      if (task.isCompleted) {
+        continue;
+      }
+      if (!task.path) {
+        continue;
+      }
+      seen.add(id);
+      active.push({ ...task, id });
+    }
+    return active;
+  }
+  getTimestampStrings(timeZone = "America/Sao_Paulo") {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    });
+    const parts = formatter.formatToParts(now);
+    const part = (type) => {
+      const match = parts.find((p) => p.type === type);
+      return match ? match.value : "";
+    };
+    const dateSegment = `${part("year")}-${part("month")}-${part("day")}`;
+    const timeSegment = `${part("hour")}:${part("minute")}:${part("second")}`;
+    return {
+      display: `${dateSegment} ${timeSegment}`,
+      filename: `${dateSegment}_${part("hour")}-${part("minute")}-${part("second")}`
+    };
+  }
+  normalizeCompletionTimestamp(value) {
+    let date = value ? new Date(value) : new Date();
+    if (isNaN(date.getTime())) {
+      date = new Date();
+    }
+    const iso = date.toISOString();
+    return { iso, date: iso.slice(0, 10) };
+  }
+  formatSyncSummary(summary) {
+    const metrics = summary || {};
+    const completed = Number(metrics.completed ?? 0);
+    const deleted = Number(metrics.deleted ?? 0);
+    const cached = Number(metrics.cached ?? 0);
+    const includeTimestamp = this.settings?.debugMode === true;
+    const header = includeTimestamp ? `Todoist Bridge: Manual sync finished (${this.getTimestampStrings().display})` : "Todoist Bridge: Manual sync finished";
+    return [
+      header,
+      `${completed} tasks completed`,
+      `${deleted} tasks deleted`,
+      `${cached} tasks on cache`
+    ].join("\n");
+  }
+  async logTaskActivity(task, context = {}) {
+    try {
+      const pathModule = require("path");
+      const fs = require("fs");
+      const fsPromises = fs.promises;
+      const adapter = this.app.vault.adapter;
+      if (!adapter) {
+        return;
+      }
+      const basePath = typeof adapter.basePath === "string" ? adapter.basePath : typeof adapter.getBasePath === "function" ? adapter.getBasePath() : null;
+      if (!basePath) {
+        return;
+      }
+      const logDir = pathModule.join(basePath, ".obsidian", "plugins", "todoist-sync");
+      const logPath = pathModule.join(logDir, "todoist-completions.log");
+      await fsPromises.mkdir(logDir, { recursive: true });
+      const status = (context == null ? void 0 : context.status) ?? "completed";
+      const statusSource = (context == null ? void 0 : context.statusSource) ?? ((context == null ? void 0 : context.source) ?? "todoist");
+      const source = (context == null ? void 0 : context.source) ?? statusSource;
+      const eventLoggedIso = (context == null ? void 0 : context.eventLoggedIso) ?? new Date().toISOString();
+      const dateClosedIso = (context == null ? void 0 : context.dateClosedIso) ?? ((context == null ? void 0 : context.iso) ?? ((status === "completed" || status === "deleted") ? eventLoggedIso : null));
+      const entry = {
+        taskId: (task == null ? void 0 : task.id) ?? null,
+        taskName: (task == null ? void 0 : task.content) ?? "",
+        filePath: (task == null ? void 0 : task.path) ?? "",
+        todoistUrl: (task == null ? void 0 : task.url) ?? null,
+        dateOpenedIso: (task == null ? void 0 : task.addedAt) ?? (task == null ? void 0 : task.createdAt) ?? null,
+        status,
+        statusSource,
+        source,
+        dateClosedIso,
+        eventLoggedIso
+      };
+      await fsPromises.appendFile(logPath, JSON.stringify(entry) + "\n", "utf8");
+    } catch (error) {
+      console.error("Todoist Bridge: failed to write activity log", error);
+    }
+  }
+  async handleTaskCompletion(taskId, options = {}) {
+    try {
+      let cachedTask = await this.cacheOperation.loadTaskFromCacheyID(taskId);
+      if (!cachedTask) {
+        try {
+          const remoteTask = await this.todoistRestAPI.getTaskById(taskId);
+          if (remoteTask) {
+            cachedTask = { ...remoteTask };
+          }
+        } catch (error) {
+          console.error("Todoist Bridge: unable to fetch task for completion", error);
+        }
+      }
+      if (!cachedTask) {
+        const fallbackPath = await this.fileOperation.searchFilepathsByTaskidInVault(taskId);
+        if (fallbackPath) {
+          cachedTask = { id: taskId, content: "", path: fallbackPath };
+        } else {
+          return;
+        }
+      }
+      const timestamp = this.normalizeCompletionTimestamp(options.completedAt);
+      try {
+        await this.fileOperation.completeTaskInTheFile(taskId, timestamp.iso, { metadataKey: "todoist_completion", displayDate: timestamp.date });
+      } catch (error) {
+        console.error("Todoist Bridge: failed to update completion state in note", error);
+      }
+      try {
+        this.cacheOperation.closeTaskToCacheByID(taskId);
+        if (cachedTask.path) {
+          this.cacheOperation.removeTaskFromMetadata(cachedTask.path, taskId);
+        }
+      } catch (error) {
+        console.error("Todoist Bridge: failed to update cache after completion", error);
+      }
+      await this.logTaskActivity(cachedTask, { dateClosedIso: timestamp.iso, status: "completed", statusSource: options.source ?? "todoist", source: options.source ?? "todoist" });
+      this.saveSettings();
+    } catch (error) {
+      console.error("Todoist Bridge: unexpected error while handling completion", error);
+    }
+  }
+  async handleTodoistTagRemoval(taskId, remoteTask) {
+    let removalHandled = false;
+    try {
+      const cachedTask = await this.cacheOperation.loadTaskFromCacheyID(taskId);
+      const taskRecord = cachedTask || remoteTask || null;
+      let filepath = (taskRecord == null ? void 0 : taskRecord.path) || null;
+      if (!filepath && cachedTask && cachedTask.path) {
+        filepath = cachedTask.path;
+      }
+      if (filepath) {
+        try {
+          const markersRemoved = await this.fileOperation.removeTodoistMarkersForTask(filepath, taskId);
+          if (markersRemoved) {
+            removalHandled = true;
+          }
+        } catch (error) {
+          console.error("Todoist Bridge: failed to remove markers after tag removal", error);
+        }
+        try {
+          this.cacheOperation.removeTaskFromMetadata(filepath, taskId);
+          removalHandled = true;
+        } catch (error) {
+          console.error("Todoist Bridge: failed to update metadata after tag removal", error);
+        }
+      } else {
+        try {
+          const fallbackPath = await this.fileOperation.removeTodoistMarkersForTaskAnywhere(taskId);
+          if (fallbackPath) {
+            removalHandled = true;
+            try {
+              this.cacheOperation.removeTaskFromMetadata(fallbackPath, taskId);
+            } catch (error) {
+              console.error("Todoist Bridge: failed to update metadata for fallback path", error);
+            }
+          }
+        } catch (error) {
+          console.error("Todoist Bridge: failed to scan vault for tag removal", error);
+        }
+      }
+      try {
+        this.cacheOperation.deleteTaskFromCache(taskId);
+        removalHandled = true;
+      } catch (error) {
+        console.error("Todoist Bridge: failed to drop task from cache after tag removal", error);
+      }
+    } catch (error) {
+      console.error("Todoist Bridge: unexpected error while handling tag removal", error);
+    }
+    return removalHandled;
+  }
+  isTrackedTodoistLabel(label) {
+    if (!label) {
+      return false;
+    }
+    const normalized = label.toString().toLowerCase();
+    return normalized === "todoist" || normalized === "obsidian" || normalized === "task";
+  }
+  async runDatabaseCheck() {
+    if (!this.checkModuleClass()) {
+      new import_obsidian4.Notice("Todoist Bridge: API not initialized");
+      return;
+    }
+    const timestamp = this.getTimestampStrings("America/Sao_Paulo");
+    console.log(`Check Database: started ${timestamp.display}`);
+    const orphaned = [];
+    const localOnly = [];
+    const dataIssues = [];
+    const orphanCandidates = [];
+    const invalidMarkers = [];
+    const localTasksById = new Map();
+    const normalizeWhitespace = (value) => value ? value.replace(/\s+/g, " " ).trim() : "";
+    const isUncheckedTask = (line) => /^\s*[-*]\s+\[\s\]/.test(line);
+    const isCheckedTask = (line) => /^\s*[-*]\s+\[(x|X)\]/.test(line);
+    const markdownFiles = this.app.vault.getMarkdownFiles ? this.app.vault.getMarkdownFiles() : [];
+    for (const file of markdownFiles) {
+      let content;
+      try {
+        content = await this.app.vault.cachedRead(file);
+      } catch (error) {
+        console.error("Todoist Bridge: failed to read file during database check", file.path, error);
+        continue;
+      }
+      if (typeof content !== "string") {
+        continue;
+      }
+      const lines = content.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const lineNumber = i + 1;
+        const hasBridgeSpan = line.includes('<span class="todoist-bridge">');
+        let todoistId = "";
+        if (hasBridgeSpan) {
+          try {
+            todoistId = (this.taskParser.getTodoistIdFromLineText(line) || "").trim();
+          } catch {
+            todoistId = "";
+          }
+        }
+        if (hasBridgeSpan && !todoistId) {
+          invalidMarkers.push({ path: file.path, lineNumber, lineText: line });
+        }
+        const unchecked = isUncheckedTask(line);
+        const checked = isCheckedTask(line);
+        const localContent = normalizeWhitespace(this.taskParser.getTaskContentFromLineText(line) ?? "");
+        const localDue = this.taskParser.getDueDateFromLineText ? (this.taskParser.getDueDateFromLineText(line) || null) : null;
+        if (todoistId) {
+          localTasksById.set(todoistId, {
+            todoistId,
+            path: file.path,
+            lineNumber,
+            lineText: line,
+            isChecked: checked,
+            content: localContent,
+            due: localDue
+          });
+        }
+        if (unchecked && todoistId) {
+          orphanCandidates.push({ todoistId, path: file.path, lineNumber, lineText: line });
+        }
+        if (unchecked && /(^|\s)#obsidian\b/i.test(line)) {
+          localOnly.push({ path: file.path, lineNumber, lineText: line });
+        }
+      }
+    }
+    for (const marker of invalidMarkers) {
+      dataIssues.push({
+        todoistId: "(invalid)",
+        issues: [`Invalid or missing todoist_id at ${marker.path}:${marker.lineNumber}`],
+        locations: { obsidian: `${marker.path}:${marker.lineNumber}` },
+        lineText: marker.lineText
+      });
+    }
+    const remoteTaskCache = new Map();
+    const fetchRemoteTask = async (taskId) => {
+      if (remoteTaskCache.has(taskId)) {
+        return remoteTaskCache.get(taskId);
+      }
+      try {
+        const task = await this.todoistRestAPI.getTaskById(taskId);
+        remoteTaskCache.set(taskId, task);
+        return task;
+      } catch (error) {
+        const message = error && error.message ? error.message : String(error);
+        if (message.includes("404")) {
+          remoteTaskCache.set(taskId, null);
+          return null;
+        }
+        console.error("Todoist Bridge: failed to fetch Todoist task", taskId, error);
+        const info = { __error: message };
+        remoteTaskCache.set(taskId, info);
+        return info;
+      }
+    };
+    for (const candidate of orphanCandidates) {
+      const remote = await fetchRemoteTask(candidate.todoistId);
+      if (remote === null) {
+        orphaned.push(candidate);
+      } else if (remote && remote.__error) {
+        dataIssues.push({
+          todoistId: candidate.todoistId,
+          issues: [`Todoist fetch error: ${remote.__error}`],
+          locations: { obsidian: `${candidate.path}:${candidate.lineNumber}` },
+          lineText: candidate.lineText
+        });
+      }
+    }
+    const cachedTasks = Array.isArray(this.settings.todoistTasksData?.tasks) ? this.settings.todoistTasksData.tasks : [];
+    for (const task of cachedTasks) {
+      if (!task) {
+        continue;
+      }
+      const taskId = task.id != null ? String(task.id) : "";
+      if (!taskId) {
+        continue;
+      }
+      const issues = [];
+      const local = localTasksById.get(taskId);
+      const remote = await fetchRemoteTask(taskId);
+      if (!local) {
+        issues.push("Missing in Obsidian");
+      }
+      if (remote === null) {
+        issues.push("Missing in Todoist");
+      } else if (remote && remote.__error) {
+        issues.push(`Todoist fetch error: ${remote.__error}`);
+      }
+      const dataStatus = task.isCompleted ? "completed" : "open";
+      if (local) {
+        const localStatus = local.isChecked ? "completed" : "open";
+        if (dataStatus !== localStatus) {
+          issues.push(`Status mismatch (data.json=${dataStatus}, Obsidian=${localStatus})`);
+        }
+      }
+      if (remote && !remote.__error && remote !== null) {
+        const remoteStatus = remote.completed ? "completed" : "open";
+        if (dataStatus !== remoteStatus) {
+          issues.push(`Status mismatch (data.json=${dataStatus}, Todoist=${remoteStatus})`);
+        }
+        if (local) {
+          const localStatus = local.isChecked ? "completed" : "open";
+          if (localStatus !== remoteStatus) {
+            issues.push(`Status mismatch (Obsidian=${localStatus}, Todoist=${remoteStatus})`);
+          }
+        }
+      }
+      const dataContent = normalizeWhitespace(task.content ?? "");
+      if (local && dataContent && local.content && local.content !== dataContent) {
+        issues.push("Content mismatch (data.json vs Obsidian)");
+      }
+      if (remote && !remote.__error && remote !== null) {
+        const remoteContent = normalizeWhitespace(remote.content ?? "");
+        if (dataContent && remoteContent && dataContent !== remoteContent) {
+          issues.push("Content mismatch (data.json vs Todoist)");
+        }
+        if (local && local.content && remoteContent && local.content !== remoteContent) {
+          issues.push("Content mismatch (Obsidian vs Todoist)");
+        }
+      }
+      const dataDue = task.due && typeof task.due === "object" ? task.due.date ?? null : null;
+      const localDue = local ? local.due : null;
+      const remoteDue = remote && !remote.__error && remote !== null ? (remote.due ? remote.due.date ?? null : null) : null;
+      const normalizedDue = [dataDue, localDue, remoteDue].map((value) => {
+        if (!value) {
+          return "";
+        }
+        return value.toString().trim();
+      });
+      const nonEmptyDue = normalizedDue.filter((value) => value !== "");
+      if (nonEmptyDue.length) {
+        const uniqueDue = Array.from(new Set(nonEmptyDue));
+        if (uniqueDue.length > 1 || nonEmptyDue.length !== normalizedDue.length) {
+          issues.push(`Due date mismatch (data.json=${dataDue || "n/a"}, Obsidian=${localDue || "n/a"}, Todoist=${remoteDue || "n/a"})`);
+        }
+      }
+      const dataProject = task.projectId ? String(task.projectId) : null;
+      const remoteProject = remote && !remote.__error && remote !== null ? (remote.projectId ? String(remote.projectId) : null) : null;
+      if (dataProject && remoteProject && dataProject !== remoteProject) {
+        issues.push(`Project mismatch (data.json=${dataProject}, Todoist=${remoteProject})`);
+      }
+      const dataSection = task.sectionId ? String(task.sectionId) : null;
+      const remoteSection = remote && !remote.__error && remote !== null ? (remote.sectionId ? String(remote.sectionId) : null) : null;
+      if (dataSection && remoteSection && dataSection !== remoteSection) {
+        issues.push(`Section mismatch (data.json=${dataSection}, Todoist=${remoteSection})`);
+      }
+      if (issues.length) {
+        const record = {
+          todoistId: taskId,
+          issues,
+          locations: {
+            obsidian: local ? `${local.path}:${local.lineNumber}` : null,
+            todoistUrl: remote && !remote.__error && remote !== null ? remote.url ?? null : null
+          }
+        };
+        if (local) {
+          record.lineText = local.lineText;
+        }
+        dataIssues.push(record);
+      }
+    }
+    const totalIssues = orphaned.length + localOnly.length + dataIssues.length;
+    const reportLines = [];
+    reportLines.push(`# Todoist Bridge — Database Check (${timestamp.display})`);
+    reportLines.push("");
+    reportLines.push("**Summary**");
+    reportLines.push(`- Orphaned Bridge Marks: ${orphaned.length}`);
+    reportLines.push(`- Local-only (#obsidian): ${localOnly.length}`);
+    reportLines.push(`- data.json Inconsistencies: ${dataIssues.length}`);
+    reportLines.push(`- Total issues: ${totalIssues}`);
+    reportLines.push("");
+    reportLines.push("## 1) Orphaned Bridge Marks");
+    if (!orphaned.length) {
+      reportLines.push("- None");
+    } else {
+      for (const entry of orphaned) {
+        reportLines.push(`- ${entry.path}:${entry.lineNumber}`);
+        reportLines.push(`  ${entry.lineText.trimEnd()}`);
+        reportLines.push(`  - todoist_id: ${entry.todoistId}`);
+        reportLines.push("  - Todoist: not found → **Remove bridge mark**");
+      }
+    }
+    reportLines.push("");
+    reportLines.push("## 2) Local-only (#obsidian)");
+    if (!localOnly.length) {
+      reportLines.push("- None");
+    } else {
+      for (const entry of localOnly) {
+        reportLines.push(`- ${entry.path}:${entry.lineNumber}`);
+        reportLines.push(`  ${entry.lineText.trimEnd()}`);
+        reportLines.push("  - Note: local task (not synced)");
+      }
+    }
+    reportLines.push("");
+    reportLines.push("## 3) data.json Inconsistencies");
+    if (!dataIssues.length) {
+      reportLines.push("- None");
+    } else {
+      for (const entry of dataIssues) {
+        reportLines.push(`- todoist_id: ${entry.todoistId}`);
+        if (Array.isArray(entry.issues)) {
+          for (const detail of entry.issues) {
+            reportLines.push(`  - ${detail}`);
+          }
+        }
+        if (entry.locations?.obsidian) {
+          reportLines.push(`  - Obsidian: ${entry.locations.obsidian}`);
+        }
+        if (entry.locations?.todoistUrl) {
+          reportLines.push(`  - Todoist URL: ${entry.locations.todoistUrl}`);
+        }
+        if (entry.lineText) {
+          reportLines.push(`  - Line: ${entry.lineText.trim()}`);
+        }
+      }
+    }
+    const reportContent = reportLines.join("\n");
+    let reportFilename = `todoist_bridgedatabase_check_${timestamp.filename}.md`;
+    let reportPath = reportFilename;
+    let suffix = 1;
+    while (await this.app.vault.adapter.exists(reportPath)) {
+      reportPath = `todoist_bridgedatabase_check_${timestamp.filename}_${suffix}.md`;
+      suffix++;
+    }
+    try {
+      await this.app.vault.create(reportPath, reportContent);
+      console.log(`Report: ${reportPath}`);
+      const noticeMessage = totalIssues ? `Todoist Bridge: Database check found ${totalIssues} issues` : "Todoist Bridge: Database check completed (no issues)";
+      new import_obsidian4.Notice(noticeMessage);
+    } catch (error) {
+      console.error("Todoist Bridge: failed to write database check report", error);
+    }
+    console.log(`Check Database: ${totalIssues} issues | Orphaned: ${orphaned.length} | Local-only: ${localOnly.length} | data.json: ${dataIssues.length}`);
   }
   async modifyTodoistAPI(api) {
     await this.initializePlugin();
@@ -10364,6 +10927,7 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
     this.settings.apiInitialized = true;
     this.syncLock = false;
     
+    this.updateAutomaticSyncInterval();
     return true;
   }
   async initializeModuleClass() {
@@ -10397,9 +10961,6 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
           return;
         }
         this.lastLines.set(fileName, line);
-        if (this.settings.todoistCreationOnlyMode) {
-          return;
-        }
         try {
           if (!await this.checkAndHandleSyncLock())
             return;
@@ -10418,14 +10979,11 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
     if (!this.checkModuleClass()) {
       return;
     }
-    if (this.settings.todoistCreationOnlyMode) {
-      return;
-    }
     const target = evt.target;
     const taskElement = target.closest("div");
     if (!taskElement)
       return;
-    const regex = /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class=\"todoist-bridge\">\s*))?\[todoist_id::\s*(\d+)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/;
+    const regex = /(?:(?:%%\s*)|(?:<!--\s*)|(?:<span class="todoist-bridge">\s*))?\[todoist_id::\s*(\d+)\](?:(?:\s*%%)|(?:\s*-->)|(?:\s*<\/span>))?/;
     const match = ((_a = taskElement.textContent) == null ? void 0 : _a.match(regex)) || false;
     if (match) {
       const taskId = match[1];
@@ -10472,31 +11030,46 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
         console.log(`file path undefined`);
         return;
       }
-      const defaultProjectName = await this.cacheOperation.getDefaultProjectNameForFilepath(filepath);
-      if (defaultProjectName === void 0) {
-        console.log(`projectName undefined`);
+      const defaultProjectName = this.settings.defaultProjectName;
+      if (!defaultProjectName) {
+        this.statusBar.setText("");
         return;
       }
       this.statusBar.setText(defaultProjectName);
     }
   }
-  async scheduledSynchronization() {
+  async scheduledSynchronization(options = {}) {
     if (!this.checkModuleClass()) {
-      return;
+      const tasks = this.cacheOperation.loadTasksFromCache();
+      const cached = Array.isArray(tasks) ? tasks.length : 0;
+      return { completed: 0, deleted: 0, cached };
     }
-    console.log("Todoist scheduled synchronization task started at", new Date().toLocaleString());
+    const interactive = options && options.interactive === true;
+    const computeCacheCount = () => {
+      const tasks = this.cacheOperation.loadTasksFromCache();
+      return Array.isArray(tasks) ? tasks.length : 0;
+    };
+    const summary = { completed: 0, deleted: 0, cached: computeCacheCount() };
+    if (interactive) {
+      const includeTimestamp = this.settings.debugMode === true;
+      if (includeTimestamp) {
+        const startTimestamp = this.getTimestampStrings();
+        console.log(`Todoist Bridge: Manual sync started (${startTimestamp.display})`);
+      } else {
+        console.log("Todoist Bridge: Manual sync started");
+      }
+    } else if (this.settings.debugMode) {
+      console.log("Todoist scheduled synchronization task started at", new Date().toLocaleString());
+    }
     try {
-      if (!await this.checkAndHandleSyncLock())
-        return;
-      const creationOnly = this.settings.todoistCreationOnlyMode;
-      if (!creationOnly) {
-        try {
-          await this.todoistSync.syncTodoistToObsidian();
-        } catch (error) {
-          console.error("An error occurred in syncTodoistToObsidian:", error);
-        }
-      } else if (this.settings.debugMode) {
-        console.log("Creation-only mode active; skipping Todoist to Obsidian sync.");
+      if (!await this.checkAndHandleSyncLock()) {
+        return summary;
+      }
+      let remoteSummary = { completed: 0, deleted: 0, cached: summary.cached };
+      try {
+        remoteSummary = await this.todoistSync.syncTodoistToObsidian(options);
+      } catch (error) {
+        console.error("An error occurred in syncTodoistToObsidian:", error);
       }
       this.syncLock = false;
       try {
@@ -10504,84 +11077,82 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
       } catch (error) {
         console.error("An error occurred in saveSettings:", error);
       }
-      if (!creationOnly) {
-        await new Promise((resolve) => setTimeout(resolve, 5e3));
-      }
+      await new Promise((resolve) => setTimeout(resolve, 5e3));
       const filesToSync = this.settings.fileMetadata;
       if (this.settings.debugMode) {
         console.log(filesToSync);
       }
       for (let fileKey in filesToSync) {
+        if (!fileKey) {
+          continue;
+        }
+        const syncFile = this.app.vault.getAbstractFileByPath(fileKey);
+        if (!syncFile || !(syncFile instanceof import_obsidian4.TFile)) {
+          continue;
+        }
         if (this.settings.debugMode) {
           console.log(fileKey);
         }
-        if (!await this.checkAndHandleSyncLock())
-          return;
+        let fileContent;
         try {
-          await this.todoistSync.fullTextNewTaskCheck(fileKey);
+          fileContent = await this.app.vault.cachedRead(syncFile);
+        } catch (error) {
+          console.error(`Failed to read ${fileKey} for synchronization:`, error);
+          continue;
+        }
+        const sharedContext = { file: syncFile, content: fileContent, metadata: filesToSync[fileKey] };
+        if (!await this.checkAndHandleSyncLock()) {
+          return summary;
+        }
+        try {
+          const created = await this.todoistSync.fullTextNewTaskCheck(fileKey, sharedContext);
+          if (created && sharedContext.file instanceof import_obsidian4.TFile) {
+            try {
+              sharedContext.content = await this.app.vault.cachedRead(sharedContext.file);
+            } catch (readError) {
+              console.error(`Error refreshing content after new task sync for ${fileKey}:`, readError);
+            }
+          }
         } catch (error) {
           console.error("An error occurred in fullTextNewTaskCheck:", error);
         }
         this.syncLock = false;
-        if (creationOnly) {
-          continue;
+        if (!await this.checkAndHandleSyncLock()) {
+          return summary;
         }
-        if (!await this.checkAndHandleSyncLock())
-          return;
         try {
-          await this.todoistSync.deletedTaskCheck(fileKey);
+          await this.todoistSync.deletedTaskCheck(fileKey, sharedContext);
         } catch (error) {
           console.error("An error occurred in deletedTaskCheck:", error);
         }
         this.syncLock = false;
-        if (!await this.checkAndHandleSyncLock())
-          return;
+        if (!await this.checkAndHandleSyncLock()) {
+          return summary;
+        }
         try {
-          await this.todoistSync.fullTextModifiedTaskCheck(fileKey);
+          await this.todoistSync.fullTextModifiedTaskCheck(fileKey, sharedContext);
         } catch (error) {
           console.error("An error occurred in fullTextModifiedTaskCheck:", error);
         }
         this.syncLock = false;
       }
-      // Optional: clean up markers for tasks deleted in Todoist
-      if (!creationOnly && this.settings.cleanupMissingRemoteTasksOnSync) {
-        try {
-          const metadatas = await this.cacheOperation.getFileMetadatas();
-          for (const key in metadatas) {
-            const value = metadatas[key];
-            const tasks = (value == null ? void 0 : value.todoistTasks) || [];
-            for (const taskId of tasks) {
-              try {
-                await this.todoistRestAPI.getTaskById(taskId);
-              } catch (err) {
-                const msg = (err && err.message) ? err.message : String(err);
-                if (msg.includes('404')) {
-                  // Task missing in Todoist → remove markers from the line and metadata
-                  await this.fileOperation.removeTodoistMarkersForTask(key, taskId);
-                  const fm = await this.cacheOperation.getFileMetadata(key);
-                  if (fm) {
-                    const newFrontMatter = { ...fm };
-                    newFrontMatter.todoistTasks = (newFrontMatter.todoistTasks || []).filter((id) => id !== taskId);
-                    newFrontMatter.todoistCount = Math.max(0, ((newFrontMatter.todoistCount || 1) - 1));
-                    await this.cacheOperation.updateFileMetadata(key, newFrontMatter);
-                  }
-                  try { this.cacheOperation.deleteTaskFromCacheByIDs([taskId]); } catch {}
-                  this.saveSettings();
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Error cleaning up missing Todoist tasks:', e);
-        }
-      }
+      summary.completed = remoteSummary.completed ?? summary.completed;
+      summary.deleted += remoteSummary.deleted ?? 0;
     } catch (error) {
       console.error("An error occurred:", error);
-      
+    } finally {
       this.syncLock = false;
     }
-    console.log("Todoist scheduled synchronization task completed at", new Date().toLocaleString());
+    summary.cached = computeCacheCount();
+    if (interactive) {
+      const finishMessage = this.formatSyncSummary(summary);
+      console.log(finishMessage);
+    } else if (this.settings.debugMode) {
+      console.log("Todoist scheduled synchronization task completed at", new Date().toLocaleString());
+    }
+    return summary;
   }
+
   async checkSyncLock() {
     let checkCount = 0;
     while (this.syncLock == true && checkCount < 10) {
@@ -10611,5 +11182,17 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
   (*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE *)
 */
 /* nosourcemap */
+
+
+
+
+
+
+
+
+
+
+
+
 
 
