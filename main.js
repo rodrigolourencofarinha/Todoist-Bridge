@@ -8444,9 +8444,59 @@ var TaskParser = class {
     return obsidianUrl;
   }
   addTodoistLink(linetext, todoistLink) {
-    const regex = new RegExp(`${keywords.TODOIST_TAG}`, "g");
-    // Place the link after the #todoist tag
-    return linetext.replace(regex, "$& " + todoistLink);
+    if (!todoistLink) {
+      return linetext;
+    }
+    let workingText = typeof linetext === "string" ? linetext : "";
+    const linkRegex = new RegExp(REGEX.TODOIST_LINK.source, REGEX.TODOIST_LINK.flags);
+    if (linkRegex.test(workingText)) {
+      workingText = workingText.replace(linkRegex, " ").replace(/\s{2,}/g, " ").trimEnd();
+    }
+    if (workingText.length === 0) {
+      workingText = todoistLink;
+    } else {
+      workingText = `${workingText} ${todoistLink}`.replace(/\s{2,}/g, " ").trim();
+    }
+    return this.normalizeTodoistMarkersOrder(workingText);
+  }
+  normalizeTodoistMarkersOrder(line) {
+    if (typeof line !== "string" || line.length === 0) {
+      return line;
+    }
+    const leadingWhitespace = (line.match(/^\s*/) || [""])[0];
+    let body = line.trim();
+    const anchorRegex = /(<span class="todoist-bridge">[\s\S]*?<\/span>|<!--[\s\S]*?-->|%%[\s\S]*?%%)/i;
+    const linkRegex = new RegExp(REGEX.TODOIST_LINK.source, REGEX.TODOIST_LINK.flags);
+    const tagRegex = new RegExp(`${keywords.TODOIST_TAG}`, "i");
+    const anchorMatch = anchorRegex.exec(body);
+    const linkMatch = linkRegex.exec(body);
+    if (!anchorMatch && !linkMatch) {
+      return line;
+    }
+    if (anchorMatch) {
+      body = body.replace(anchorRegex, " ").trim();
+    }
+    if (linkMatch) {
+      body = body.replace(linkRegex, " ").trim();
+    }
+    body = body.replace(/\s{2,}/g, " ").trim();
+    const segments = [];
+    if (anchorMatch) {
+      segments.push(anchorMatch[0].trim());
+    }
+    if (linkMatch) {
+      segments.push(linkMatch[0].trim());
+    }
+    const insertion = segments.join(" ");
+    if (insertion.length === 0) {
+      return `${leadingWhitespace}${body}`.replace(/\s{2,}/g, " ").trimEnd();
+    }
+    if (tagRegex.test(body)) {
+      body = body.replace(tagRegex, (match) => `${match.trim()} ${insertion}`.trim());
+    } else {
+      body = `${body} ${insertion}`.trim();
+    }
+    return `${leadingWhitespace}${body}`.replace(/\s{2,}/g, " ").trimEnd();
   }
   // Check whether the content includes a Todoist link
   hasTodoistLink(lineText) {
@@ -9004,6 +9054,7 @@ var FileOperation = class {
             const metadata = ensureMetadata("");
             newLine = `${newLine.trimEnd()} <span class="todoist-bridge">${metadata}</span>`;
           }
+          newLine = this.plugin.taskParser.normalizeTodoistMarkersOrder(newLine);
         } catch (error) {
           console.error("Failed to normalize Todoist metadata span:", error);
         }
@@ -9039,6 +9090,7 @@ var FileOperation = class {
       if (line.includes(taskId) && this.plugin.taskParser.hasTodoistTag(line)) {
         let newLine = line.replace(/- \[(x|X)\]/g, "- [ ]");
         newLine = newLine.replace(completionInlinePattern, " ");
+        newLine = this.plugin.taskParser.normalizeTodoistMarkersOrder(newLine);
         newLine = newLine.replace(/\s{2,}/g, " ").trimEnd();
         lines[i] = newLine;
         modified = true;
@@ -9351,13 +9403,48 @@ var TodoistSync = class {
       return false;
     }
     for (const taskId of missingTaskIds) {
+      const taskIdStr = String(taskId);
+      let cachedTask = null;
       try {
-        this.plugin.cacheOperation.removeTaskFromMetadata(filepath, taskId);
+        cachedTask = this.plugin.cacheOperation.loadTaskFromCacheyID(taskIdStr);
+      } catch (error) {
+        console.error("Error loading cached task while pruning deleted tasks:", error);
+      }
+      const taskForLog = cachedTask ? { ...cachedTask } : { id: taskIdStr };
+      if (!taskForLog.path) {
+        taskForLog.path = filepath;
+      }
+      if (typeof taskForLog.content !== "string") {
+        taskForLog.content = taskForLog.content != null ? String(taskForLog.content) : "";
+      }
+      if (!("url" in taskForLog)) {
+        taskForLog.url = null;
+      }
+      if (!("addedAt" in taskForLog)) {
+        taskForLog.addedAt = null;
+      }
+      if (!("createdAt" in taskForLog)) {
+        taskForLog.createdAt = null;
+      }
+      try {
+        const timestamp = this.plugin.normalizeCompletionTimestamp();
+        await this.plugin.logTaskActivity(taskForLog, {
+          status: "deleted",
+          statusSource: "obsidian",
+          source: "obsidian",
+          dateClosedIso: timestamp.iso,
+          eventLoggedIso: timestamp.iso
+        });
+      } catch (error) {
+        console.error("Todoist Bridge: failed to log Obsidian deletion", error);
+      }
+      try {
+        this.plugin.cacheOperation.removeTaskFromMetadata(filepath, taskIdStr);
       } catch (error) {
         console.error("Error updating metadata while pruning deleted tasks:", error);
       }
       try {
-        this.plugin.cacheOperation.deleteTaskFromCache(taskId);
+        this.plugin.cacheOperation.deleteTaskFromCache(taskIdStr);
       } catch (error) {
         console.error("Error removing task from cache while pruning deleted tasks:", error);
       }
