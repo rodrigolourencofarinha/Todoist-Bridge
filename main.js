@@ -10577,7 +10577,7 @@ var TodoistBridgeForObsidian = class extends import_obsidian4.Plugin {
       if (!basePath) {
         return;
       }
-      const logDir = pathModule.join(basePath, ".obsidian", "plugins", "todoist-sync");
+      const logDir = pathModule.join(basePath, ".obsidian", "plugins", "todoist-bridge");
       const logPath = pathModule.join(logDir, "todoist-completions.log");
       await fsPromises.mkdir(logDir, { recursive: true });
       const status = (context == null ? void 0 : context.status) ?? "completed";
